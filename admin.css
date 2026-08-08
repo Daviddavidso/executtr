@@ -1,0 +1,313 @@
+/* Панель управления. Наследует токены и кнопки из styles.css. */
+
+.admin-body { background: var(--paper); }
+
+/* --------------------------------------------------------------------------
+   Экран входа
+   -------------------------------------------------------------------------- */
+
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background:
+    radial-gradient(circle at 18% 12%, #D9F6E3 0%, transparent 46%),
+    radial-gradient(circle at 88% 86%, #E8FAEE 0%, transparent 50%),
+    var(--paper);
+  overflow-y: auto;
+}
+.gate[hidden] { display: none; }
+
+.gate__card {
+  width: 100%;
+  max-width: 420px;
+  padding: 30px 26px 26px;
+  background: var(--paper-card);
+  border: 1px solid var(--hair);
+  border-radius: 22px;
+  box-shadow: 0 32px 70px -44px rgba(10,12,10,.6);
+}
+.gate__logo { display: block; margin-bottom: 20px; }
+.gate__title { font-size: 27px; font-weight: 800; margin-bottom: 8px; }
+.gate__sub { font-size: 14.5px; color: var(--muted); margin-bottom: 22px; }
+.gate__err { margin-bottom: 16px; }
+.gate__submit { width: 100%; margin-top: 20px; }
+.gate__hint { margin-top: 18px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+
+.row-inline { display: flex; gap: 8px; align-items: stretch; }
+.row-inline input { flex: 1 1 auto; min-width: 0; }
+.row-inline .btn { flex: 0 0 auto; }
+
+#gate-user { background: var(--paper); color: var(--muted); }
+
+/* --------------------------------------------------------------------------
+   Каркас
+   -------------------------------------------------------------------------- */
+
+.masthead__admin { display: flex; gap: 8px; align-items: center; }
+
+.admin-main { padding: 28px 0 80px; }
+
+.admin-layout { display: grid; gap: 22px; }
+@media (min-width: 1180px) {
+  .admin-layout { grid-template-columns: minmax(0, 1fr) 400px; align-items: start; gap: 26px; }
+}
+
+.admin-col { display: grid; gap: 18px; min-width: 0; }
+.admin-intro { margin-bottom: 2px; }
+.admin-h1 { font-size: clamp(28px, 5vw, 40px); font-weight: 900; letter-spacing: -0.04em; margin-bottom: 12px; }
+
+.panel {
+  padding: 20px;
+  background: var(--paper-card);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+@media (min-width: 760px) { .panel { padding: 26px; } }
+
+.panel h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.025em; }
+.panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.panel .section__sub { font-size: 14.5px; margin-top: 0; margin-bottom: 18px; }
+
+.panel--publish { border-color: var(--edge); border-width: 1.5px; }
+
+.publish-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.publish-dirty {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--green-ink);
+}
+.conn { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.conn[data-state="off"] { color: #8C1D18; }
+.conn[data-state="on"] { color: var(--green-ink); }
+
+/* --------------------------------------------------------------------------
+   Таблицы
+   -------------------------------------------------------------------------- */
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-sm);
+  -webkit-overflow-scrolling: touch;
+}
+
+.tbl {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+.tbl caption {
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 12px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--hair);
+  background: var(--paper);
+}
+.tbl th {
+  text-align: left;
+  padding: 10px 14px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--hair);
+  white-space: nowrap;
+}
+.tbl td { padding: 12px 14px; border-bottom: 1px solid var(--hair); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl tbody tr:hover { background: var(--paper); }
+
+.cell-title { font-weight: 700; letter-spacing: -0.015em; }
+.cell-sub { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
+.cell-acts { display: flex; gap: 6px; justify-content: flex-end; }
+
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px; height: 34px;
+  border: 1.5px solid var(--edge);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.iconbtn:hover { border-color: var(--ink); background: rgba(10,12,10,.05); }
+.iconbtn[aria-disabled="true"] { color: #8C9585; border-color: var(--hair); cursor: default; }
+.iconbtn[aria-disabled="true"]:hover { background: transparent; border-color: var(--hair); }
+.iconbtn--danger:hover { border-color: #B3261E; color: #B3261E; background: #FDF2F1; }
+
+/* Статус в таблице: слово + форма, а не только цвет */
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 11px 4px 9px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.state::before { content: ""; width: 7px; height: 7px; }
+.state--on  { background: var(--green-soft); color: var(--green-ink); border-color: var(--green-ui); }
+.state--on::before  { border-radius: 50%; background: var(--green-deep); }
+.state--off { background: #E9EBE6; color: var(--ink); border-color: var(--edge); }
+.state--off::before { background: var(--ink); }
+
+/* --------------------------------------------------------------------------
+   Панель офферов
+   -------------------------------------------------------------------------- */
+
+.admin-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.field--search { flex: 1 1 240px; min-width: 0; }
+.field--search input { width: 100%; }
+.admin-count { font-size: 11.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.admin-empty { padding: 22px 4px 4px; color: var(--muted); }
+
+.vh-file {
+  position: absolute;
+  width: 1px; height: 1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+/* Кольцо фокуса рисуем на подписи — сам input скрыт */
+.vh-file:focus-visible + label,
+label[for="import-file"]:has(+ .vh-file:focus-visible) {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px #fff;
+}
+
+/* --------------------------------------------------------------------------
+   Предпросмотр
+   -------------------------------------------------------------------------- */
+
+.preview-col { min-width: 0; }
+@media (min-width: 1180px) {
+  .preview-col { position: sticky; top: calc(var(--header-h) + 18px); }
+}
+.preview .hint { margin-bottom: 14px; }
+.preview__frame {
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--paper);
+}
+.preview__frame iframe {
+  display: block;
+  width: 100%;
+  height: 520px;
+  border: 0;
+}
+@media (max-width: 1179.98px) { .preview__frame iframe { height: 400px; } }
+
+/* --------------------------------------------------------------------------
+   Диалоги
+   -------------------------------------------------------------------------- */
+
+.dlg {
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: transparent;
+  max-width: min(760px, calc(100vw - 28px));
+  width: 100%;
+  color: var(--ink);
+}
+.dlg::backdrop { background: rgba(10,12,10,.44); }
+
+.dlg__panel {
+  padding: 24px 22px;
+  background: var(--paper-card);
+  border-radius: 20px;
+  max-height: min(86vh, 900px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (min-width: 760px) { .dlg__panel { padding: 30px 28px; } }
+.dlg__panel--sm { max-width: 520px; }
+
+.dlg__panel h2 { font-size: 23px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; }
+.dlg__panel > .hint { margin-bottom: 20px; }
+
+.dlg__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid var(--hair);
+}
+.dlg__foot .btn { flex: 1 1 auto; }
+@media (min-width: 560px) { .dlg__foot .btn { flex: 0 0 auto; } }
+
+.btn--danger { --btn-bg: #B3261E; --btn-fg: #fff; --btn-bd: #B3261E; }
+.btn--danger:hover { --btn-bg: #8C1D18; --btn-bd: #8C1D18; }
+
+.field select {
+  width: 100%;
+  padding: 13px 15px;
+  border: 1.5px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: var(--paper-card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+
+/* Галочка «оффер активен» — обычный чекбокс, а не «переключатель»:
+   изменение вступает в силу после сохранения, а не сразу. */
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 15px;
+  border: 1.5px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+}
+.switch input { width: 22px; height: 22px; margin: 0; accent-color: var(--green-deep); flex: 0 0 auto; }
+.switch label { margin: 0; font-size: 15px; font-weight: 600; }
+.switch__state {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}

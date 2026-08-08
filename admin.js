@@ -1,0 +1,852 @@
+/* EXECUTTR — панель управления витриной.
+   Черновик лежит в localStorage, на сайт уезжает через api.php. */
+(function () {
+  "use strict";
+
+  var DRAFT_KEY = "executtr:draft";
+  var TOKEN_KEY = "executtr:token";
+
+  var FILE = window.SITE_DATA || { site: {}, categories: [], offers: [], faq: [] };
+
+  var $  = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  function clone(x) { return JSON.parse(JSON.stringify(x)); }
+  function el(t, c, txt) { var n = document.createElement(t); if (c) n.className = c; if (txt != null) n.textContent = txt; return n; }
+
+  function plural(n, one, few, many) {
+    var a = Math.abs(n) % 100, b = a % 10;
+    if (a > 10 && a < 20) return many;
+    if (b > 1 && b < 5) return few;
+    if (b === 1) return one;
+    return many;
+  }
+
+  var live = $("#live"), liveAlert = $("#live-alert");
+  function say(m)   { if (live) { live.textContent = ""; setTimeout(function () { live.textContent = m; }, 60); } }
+  function shout(m) { if (liveAlert) { liveAlert.textContent = ""; setTimeout(function () { liveAlert.textContent = m; }, 60); } }
+
+  /* ---------- Черновик ---------- */
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        var p = JSON.parse(raw);
+        if (p && Array.isArray(p.offers)) {
+          if (!Array.isArray(p.categories) || !p.categories.length) p.categories = clone(FILE.categories);
+          if (!p.site) p.site = clone(FILE.site || {});
+          if (!Array.isArray(p.faq)) p.faq = clone(FILE.faq || []);
+          return p;
+        }
+      }
+    } catch (e) { /* битый черновик — берём файл */ }
+    return clone(FILE);
+  }
+
+  var DATA = load();
+  var dirty = false;
+
+  function persist(announceText) {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(DATA));
+    } catch (e) {
+      shout("Черновик не сохранился: в браузере кончилось место. Выгрузи JSON, пока правки не потерялись.");
+      return;
+    }
+    setDirty(true);
+    refreshPreview();
+    if (announceText) say(announceText);
+  }
+
+  function setDirty(v) {
+    dirty = v;
+    var d = $("#dirty");
+    if (d) d.hidden = !v;
+  }
+
+  window.addEventListener("beforeunload", function (e) {
+    if (!dirty) return;
+    e.preventDefault();
+    e.returnValue = "";
+  });
+
+  /* ---------- Сервер ---------- */
+
+  var token = "";
+  try { token = sessionStorage.getItem(TOKEN_KEY) || ""; } catch (e) { token = ""; }
+  var online = false;
+
+  function api(action, payload) {
+    return fetch("api.php?action=" + action, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+      body: JSON.stringify(payload || {})
+    }).then(function (r) { return r.json().catch(function () { return { ok: false, error: "Сервер ответил не по делу" }; }); });
+  }
+
+  function setConn(state, text) {
+    var c = $("#conn");
+    if (!c) return;
+    c.dataset.state = state;
+    c.textContent = text;
+  }
+
+  function ping() {
+    return fetch("api.php?action=ping", { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        online = !!(j && j.ok);
+        if (online && j.writable === false) {
+          setConn("off", "сервер на связи, но data.js защищён от записи");
+        } else {
+          setConn("on", "сервер на связи");
+        }
+        return j;
+      })
+      .catch(function () {
+        online = false;
+        setConn("off", "офлайн — публикация недоступна");
+        return null;
+      });
+  }
+
+  /* ---------- Вход ---------- */
+
+  var gate = $("#gate"), gateForm = $("#gate-form"), gateErr = $("#gate-err");
+
+  function openApp() {
+    gate.hidden = true;
+    $("#masthead").hidden = false;
+    $("#main").hidden = false;
+    renderAll();
+    ping();
+    refreshPreview();
+  }
+
+  function gateError(msg) {
+    gateErr.textContent = msg;
+    gateErr.hidden = false;
+    var p = $("#gate-pass");
+    p.focus();
+    p.select();
+  }
+
+  ping().then(function (j) {
+    if (!j) $("#gate-offline").hidden = false;
+    if (token) {
+      // Проверяем токен пустым сохранением прав: просто пробуем открыть.
+      openApp();
+    }
+  });
+
+  gateForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    gateErr.hidden = true;
+    var pass = $("#gate-pass").value;
+    if (!pass) { gateError("Введи пароль."); return; }
+
+    var btn = $("#gate-submit");
+    btn.setAttribute("aria-disabled", "true");
+    var lbl = btn.textContent;
+    btn.textContent = "Проверяем…";
+
+    api("login", { password: pass })
+      .then(function (res) {
+        if (res && res.ok && res.token) {
+          token = res.token;
+          try { sessionStorage.setItem(TOKEN_KEY, token); } catch (err) { /* приватный режим */ }
+          openApp();
+          $("#main").focus();
+        } else {
+          gateError((res && res.error) || "Пароль не подошёл. Проверь раскладку и регистр — пароль латиницей.");
+        }
+      })
+      .catch(function () {
+        $("#gate-offline").hidden = false;
+        gateError("Сервер не отвечает. Можно продолжить офлайн — правки сохранятся в браузере.");
+      })
+      .then(function () {
+        btn.removeAttribute("aria-disabled");
+        btn.textContent = lbl;
+      });
+  });
+
+  $("#gate-eye").addEventListener("click", function () {
+    var p = $("#gate-pass"), on = this.getAttribute("aria-pressed") === "true";
+    this.setAttribute("aria-pressed", String(!on));
+    this.textContent = on ? "Показать" : "Скрыть";
+    p.type = on ? "password" : "text";
+    p.focus();
+  });
+
+  $("#gate-skip").addEventListener("click", function () { openApp(); });
+
+  $("#logout").addEventListener("click", function () {
+    if (dirty && !window.confirm("В черновике есть несохранённые правки. Выйти всё равно?")) return;
+    token = "";
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* ок */ }
+    location.reload();
+  });
+
+  /* ---------- Предпросмотр ---------- */
+
+  var prevTimer = null;
+  function refreshPreview(announce) {
+    var f = $("#prev-frame");
+    if (!f) return;
+    clearTimeout(prevTimer);
+    prevTimer = setTimeout(function () {
+      var url = "./?draft=" + Date.now();
+      try { f.contentWindow.location.replace(url); }
+      catch (e) { f.setAttribute("src", url); }
+      if (announce) say("Предпросмотр обновлён");
+    }, 400);
+  }
+
+  $("#prev-refresh").addEventListener("click", function () { refreshPreview(true); });
+
+  /* Витрину с ?draft рисует сам app.js — он читает тот же черновик
+     из localStorage. Здесь достаточно перезагрузить фрейм. */
+
+  /* ---------- Настройки сайта ---------- */
+
+  function fillSiteForm() {
+    var s = DATA.site || (DATA.site = {});
+    $("#s-name").value = s.name || "";
+    $("#s-tagline").value = s.tagline || "";
+    $("#s-lead").value = s.lead || "";
+    $("#s-tg").value = s.telegram || "";
+    $$("[data-brand]").forEach(function (n) { n.textContent = s.name || "EXECUTTR"; });
+  }
+
+  $("#site-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    DATA.site = DATA.site || {};
+    DATA.site.name = $("#s-name").value.trim();
+    DATA.site.tagline = $("#s-tagline").value.trim();
+    DATA.site.lead = $("#s-lead").value.trim();
+    DATA.site.telegram = $("#s-tg").value.trim();
+    fillSiteForm();
+    persist("Настройки сохранены в черновик");
+  });
+
+  /* ---------- Категории ---------- */
+
+  var catRows = $("#cat-rows");
+
+  function catCount(id) {
+    return DATA.offers.filter(function (o) { return o.cat === id; }).length;
+  }
+
+  function slug(label) {
+    var base = label.toLowerCase()
+      .replace(/[^a-z0-9а-яё]+/gi, "-")
+      .replace(/^-+|-+$/g, "") || "cat";
+    var id = base, n = 2;
+    while (DATA.categories.some(function (c) { return c.id === id; })) id = base + "-" + (n++);
+    return id;
+  }
+
+  function iconBtn(label, glyph, cls) {
+    var b = el("button", "iconbtn" + (cls ? " " + cls : ""));
+    b.type = "button";
+    b.appendChild(el("span", null, glyph));
+    b.lastChild.setAttribute("aria-hidden", "true");
+    b.appendChild(el("span", "vh", label));
+    return b;
+  }
+
+  function renderCats() {
+    catRows.textContent = "";
+    var list = DATA.categories;
+
+    list.forEach(function (c, i) {
+      var isAll = c.id === "all";
+      var tr = el("tr");
+      tr.dataset.id = c.id;
+
+      var td1 = el("td");
+      td1.appendChild(el("b", "cell-title", c.label));
+      if (isAll) td1.appendChild(el("span", "cell-sub", "общий фильтр"));
+      tr.appendChild(td1);
+
+      var n = isAll ? DATA.offers.length : catCount(c.id);
+      tr.appendChild(el("td", null, String(n)));
+
+      var td3 = el("td");
+      var acts = el("div", "cell-acts");
+
+      var up = iconBtn("Поднять категорию «" + c.label + "»", "↑");
+      var dn = iconBtn("Опустить категорию «" + c.label + "»", "↓");
+      up.dataset.act = "up"; dn.dataset.act = "down";
+      up.dataset.id = c.id;  dn.dataset.id = c.id;
+      if (i <= 1) up.setAttribute("aria-disabled", "true");   // «Все» всегда первая
+      if (i === 0 || i === list.length - 1) dn.setAttribute("aria-disabled", "true");
+      if (isAll) { up.setAttribute("aria-disabled", "true"); dn.setAttribute("aria-disabled", "true"); }
+
+      up.addEventListener("click", function () { moveCat(c.id, -1); });
+      dn.addEventListener("click", function () { moveCat(c.id, 1); });
+      acts.appendChild(up); acts.appendChild(dn);
+
+      if (!isAll) {
+        var ed = iconBtn("Переименовать категорию «" + c.label + "»", "✎");
+        ed.dataset.act = "edit"; ed.dataset.id = c.id;
+        ed.addEventListener("click", function () { openCatDialog(c); });
+        acts.appendChild(ed);
+
+        var rm = iconBtn("Удалить категорию «" + c.label + "»", "✕", "iconbtn--danger");
+        rm.dataset.act = "del"; rm.dataset.id = c.id;
+        rm.addEventListener("click", function () { openCatDelete(c); });
+        acts.appendChild(rm);
+      }
+
+      td3.appendChild(acts);
+      tr.appendChild(td3);
+      catRows.appendChild(tr);
+    });
+
+    $("#cat-cap").textContent = "Категорий: " + list.length;
+    fillCatSelect();
+  }
+
+  function moveCat(id, dir) {
+    var i = DATA.categories.findIndex(function (c) { return c.id === id; });
+    var j = i + dir;
+    if (i < 1 || j < 1 || j >= DATA.categories.length) return; // «Все» держим первой
+    var tmp = DATA.categories[i];
+    DATA.categories[i] = DATA.categories[j];
+    DATA.categories[j] = tmp;
+    persist();
+    renderCats();
+    say("Категория «" + tmp.label + "» теперь " + (j + 1) + "-я");
+    refocus('[data-act="' + (dir < 0 ? "up" : "down") + '"][data-id="' + cssEsc(id) + '"]');
+  }
+
+  function cssEsc(s) { return window.CSS && CSS.escape ? CSS.escape(s) : String(s).replace(/"/g, '\\"'); }
+
+  function refocus(sel) {
+    var n = document.querySelector(sel);
+    if (n && n.isConnected) n.focus();
+  }
+
+  /* Диалог категории */
+  var catDlg = $("#cat-dlg"), catForm = $("#cat-form"), catEditing = null, catOpener = null;
+
+  function openCatDialog(cat) {
+    catEditing = cat || null;
+    catOpener = document.activeElement;
+    $("#cat-dlg-h").textContent = cat ? "Переименовать категорию" : "Новая категория";
+    $("#cat-save").textContent = cat ? "Сохранить" : "Добавить";
+    $("#c-name").value = cat ? cat.label : "";
+    $("#c-name-err").hidden = true;
+    $("#c-name").removeAttribute("aria-invalid");
+    catDlg.showModal();
+    $("#c-name").focus();
+  }
+
+  $("#cat-add").addEventListener("click", function () { openCatDialog(null); });
+  $("#cat-cancel").addEventListener("click", function () { catDlg.close(); });
+
+  catDlg.addEventListener("close", function () {
+    if (catOpener && catOpener.isConnected) catOpener.focus();
+    else refocus("#cat-add");
+  });
+
+  catForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var input = $("#c-name"), errBox = $("#c-name-err");
+    var name = input.value.trim();
+
+    var clash = DATA.categories.some(function (c) {
+      return c.label.toLowerCase() === name.toLowerCase() && c !== catEditing;
+    });
+
+    var msg = "";
+    if (!name) msg = "Напиши название категории — например «Crypto».";
+    else if (name.length > 40) msg = "Слишком длинно: " + name.length + " символов, а на кнопке помещается 40.";
+    else if (clash) msg = "Категория «" + name + "» уже есть. Придумай другое название.";
+
+    if (msg) {
+      input.setAttribute("aria-invalid", "true");
+      errBox.textContent = msg;
+      errBox.hidden = false;
+      input.focus();
+      return;
+    }
+
+    if (catEditing) {
+      catEditing.label = name;
+      say("Категория переименована в «" + name + "»");
+    } else {
+      DATA.categories.push({ id: slug(name), label: name });
+      say("Категория «" + name + "» добавлена");
+    }
+    persist();
+    renderCats();
+    renderOffers();
+    catDlg.close();
+  });
+
+  /* Удаление категории с переносом офферов */
+  var catDelDlg = $("#catdel-dlg"), catDelTarget = null, catDelOpener = null;
+
+  function openCatDelete(cat) {
+    catDelTarget = cat;
+    catDelOpener = document.activeElement;
+    var n = catCount(cat.id);
+
+    $("#catdel-h").textContent = "Удалить «" + cat.label + "»?";
+    var move = $("#catdel-move"), sel = $("#catdel-target");
+    $("#catdel-err").hidden = true;
+
+    if (n) {
+      $("#catdel-desc").textContent = "В категории " + n + " " + plural(n, "оффер", "оффера", "офферов") +
+        ". Выбери, куда их перенести — иначе они потеряются.";
+      sel.textContent = "";
+      sel.appendChild(new Option("— выбери категорию —", ""));
+      DATA.categories.forEach(function (c) {
+        if (c.id !== cat.id && c.id !== "all") sel.appendChild(new Option(c.label, c.id));
+      });
+      move.hidden = false;
+    } else {
+      $("#catdel-desc").textContent = "В категории нет офферов, удаляем без последствий.";
+      move.hidden = true;
+    }
+
+    catDelDlg.showModal();
+    $("#catdel-cancel").focus();
+  }
+
+  $("#catdel-cancel").addEventListener("click", function () { catDelDlg.close(); });
+  catDelDlg.addEventListener("close", function () {
+    if (catDelOpener && catDelOpener.isConnected) catDelOpener.focus();
+    else refocus("#cats-h");
+  });
+
+  $("#catdel-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var cat = catDelTarget, n = catCount(cat.id);
+    if (n) {
+      var to = $("#catdel-target").value;
+      if (!to) {
+        var er = $("#catdel-err");
+        er.textContent = "Выбери категорию, в которую перенести офферы.";
+        er.hidden = false;
+        $("#catdel-target").focus();
+        return;
+      }
+      DATA.offers.forEach(function (o) { if (o.cat === cat.id) o.cat = to; });
+    }
+    DATA.categories = DATA.categories.filter(function (c) { return c.id !== cat.id; });
+    persist();
+    catDelOpener = null;
+    catDelDlg.close();
+    renderCats();
+    renderOffers();
+    shout("Категория «" + cat.label + "» удалена");
+    refocus("#cat-add");
+  });
+
+  /* ---------- Офферы ---------- */
+
+  var offerRows = $("#offer-rows"), adminQ = $("#admin-q");
+  var query = "";
+
+  function visibleOffers() {
+    if (!query) return DATA.offers.slice();
+    return DATA.offers.filter(function (o) {
+      return [o.title, o.geo, o.sources, o.model, o.payout].join(" ").toLowerCase().indexOf(query) >= 0;
+    });
+  }
+
+  function catLabel(id) {
+    var c = DATA.categories.filter(function (x) { return x.id === id; })[0];
+    return c ? c.label : "без категории";
+  }
+
+  function renderOffers() {
+    offerRows.textContent = "";
+    var list = visibleOffers();
+    var total = DATA.offers.length;
+
+    list.forEach(function (o) {
+      var i = DATA.offers.indexOf(o);
+      var tr = el("tr");
+      tr.dataset.id = o.id;
+
+      var td1 = el("td");
+      td1.appendChild(el("b", "cell-title", o.title || "Без названия"));
+      td1.appendChild(el("span", "cell-sub", catLabel(o.cat)));
+      tr.appendChild(td1);
+
+      tr.appendChild(el("td", null, o.geo || "—"));
+      tr.appendChild(el("td", null, o.payout || "—"));
+
+      var td4 = el("td");
+      var on = o.active !== false;
+      var st = el("span", "state " + (on ? "state--on" : "state--off"), on ? "Активен" : "На паузе");
+      td4.appendChild(st);
+      tr.appendChild(td4);
+
+      var td5 = el("td");
+      var acts = el("div", "cell-acts");
+
+      var up = iconBtn("Поднять оффер «" + o.title + "»", "↑");
+      var dn = iconBtn("Опустить оффер «" + o.title + "»", "↓");
+      up.dataset.act = "up"; up.dataset.id = o.id;
+      dn.dataset.act = "down"; dn.dataset.id = o.id;
+      if (i === 0) up.setAttribute("aria-disabled", "true");
+      if (i === total - 1) dn.setAttribute("aria-disabled", "true");
+      up.addEventListener("click", function () { moveOffer(o.id, -1); });
+      dn.addEventListener("click", function () { moveOffer(o.id, 1); });
+      acts.appendChild(up); acts.appendChild(dn);
+
+      var tg = iconBtn((on ? "Поставить на паузу оффер «" : "Вернуть в работу оффер «") + o.title + "»", on ? "⏸" : "▶");
+      tg.dataset.act = "toggle"; tg.dataset.id = o.id;
+      tg.addEventListener("click", function () {
+        o.active = !(o.active !== false);
+        persist();
+        renderOffers();
+        say("«" + o.title + "» — " + (o.active ? "снова в работе" : "на паузе"));
+        refocus('[data-act="toggle"][data-id="' + cssEsc(o.id) + '"]');
+      });
+      acts.appendChild(tg);
+
+      var ed = iconBtn("Изменить оффер «" + o.title + "»", "✎");
+      ed.dataset.act = "edit"; ed.dataset.id = o.id;
+      ed.addEventListener("click", function () { openOfferDialog(o); });
+      acts.appendChild(ed);
+
+      var rm = iconBtn("Удалить оффер «" + o.title + "»", "✕", "iconbtn--danger");
+      rm.dataset.act = "del"; rm.dataset.id = o.id;
+      rm.addEventListener("click", function () { askDelete(o); });
+      acts.appendChild(rm);
+
+      td5.appendChild(acts);
+      tr.appendChild(td5);
+      offerRows.appendChild(tr);
+    });
+
+    $("#offer-empty").hidden = list.length > 0;
+    var paused = DATA.offers.filter(function (o) { return o.active === false; }).length;
+    $("#admin-count").textContent = query
+      ? "Найдено " + list.length + " из " + total
+      : total + " " + plural(total, "оффер", "оффера", "офферов") + (paused ? " · " + paused + " на паузе" : "");
+  }
+
+  function moveOffer(id, dir) {
+    var i = DATA.offers.findIndex(function (o) { return o.id === id; });
+    var j = i + dir;
+    if (i < 0 || j < 0 || j >= DATA.offers.length) return;
+    var tmp = DATA.offers[i];
+    DATA.offers[i] = DATA.offers[j];
+    DATA.offers[j] = tmp;
+    persist();
+    renderOffers();
+    announceMove(tmp.title, j + 1, DATA.offers.length);
+    refocus('[data-act="' + (dir < 0 ? "up" : "down") + '"][data-id="' + cssEsc(id) + '"]');
+  }
+
+  /* Зажатую стрелку не читаем на каждый шаг — только итог */
+  var moveTimer = null;
+  function announceMove(title, pos, total) {
+    clearTimeout(moveTimer);
+    moveTimer = setTimeout(function () {
+      say("«" + title + "» на позиции " + pos + " из " + total);
+    }, 250);
+  }
+
+  adminQ.addEventListener("input", function () {
+    query = adminQ.value.trim().toLowerCase();
+    renderOffers();
+  });
+
+  /* Диалог оффера */
+  var offerDlg = $("#offer-dlg"), offerForm = $("#offer-form"), editing = null, offerOpener = null;
+
+  function fillCatSelect() {
+    var sel = $("#o-cat");
+    var keep = sel.value;
+    sel.textContent = "";
+    DATA.categories.forEach(function (c) {
+      if (c.id !== "all") sel.appendChild(new Option(c.label, c.id));
+    });
+    if (keep) sel.value = keep;
+  }
+
+  function setActiveState() {
+    $("#o-active-state").textContent = $("#o-active").checked ? "Активен" : "На паузе";
+  }
+  $("#o-active").addEventListener("change", setActiveState);
+
+  function openOfferDialog(offer) {
+    editing = offer || null;
+    offerOpener = document.activeElement;
+    fillCatSelect();
+
+    $("#offer-dlg-h").textContent = offer ? "Изменить оффер" : "Новый оффер";
+    $("#o-title").value   = offer ? (offer.title || "") : "";
+    $("#o-cat").value     = offer ? (offer.cat || "") : ($("#o-cat").options[0] ? $("#o-cat").options[0].value : "");
+    $("#o-geo").value     = offer ? (offer.geo || "") : "";
+    $("#o-payout").value  = offer ? (offer.payout || "") : "";
+    $("#o-model").value   = offer ? (offer.model || "") : "";
+    $("#o-hold").value    = offer ? (offer.hold || "") : "";
+    $("#o-badge").value   = offer ? (offer.badge || "") : "";
+    $("#o-url").value     = offer ? (offer.url || "") : "";
+    $("#o-sources").value = offer ? (offer.sources || "") : "";
+    $("#o-note").value    = offer ? (offer.note || "") : "";
+    $("#o-active").checked = offer ? offer.active !== false : true;
+    setActiveState();
+
+    ["#o-title-err", "#o-url-err"].forEach(function (s) { $(s).hidden = true; });
+    ["#o-title", "#o-url"].forEach(function (s) { $(s).removeAttribute("aria-invalid"); });
+    $("#offer-errs").hidden = true;
+
+    offerDlg.showModal();
+    $("#o-title").focus();
+  }
+
+  $("#offer-add").addEventListener("click", function () { openOfferDialog(null); });
+  $("#offer-cancel").addEventListener("click", function () { offerDlg.close(); });
+
+  offerDlg.addEventListener("close", function () {
+    if (offerOpener && offerOpener.isConnected) offerOpener.focus();
+    else refocus("#offer-add");
+  });
+
+  function fieldErr(sel, msg) {
+    var i = $(sel), b = $(sel + "-err");
+    if (msg) { i.setAttribute("aria-invalid", "true"); b.textContent = msg; b.hidden = false; }
+    else { i.removeAttribute("aria-invalid"); b.textContent = ""; b.hidden = true; }
+  }
+
+  offerForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    var errs = [];
+    fieldErr("#o-title", null);
+    fieldErr("#o-url", null);
+
+    var title = $("#o-title").value.trim();
+    var url = $("#o-url").value.trim();
+
+    if (!title) {
+      fieldErr("#o-title", "Без названия карточку не подписать. Например: 1Win Casino.");
+      errs.push(["o-title", "Название оффера не заполнено"]);
+    }
+    if (!url) {
+      fieldErr("#o-url", "Нужна ссылка — её и забирают по кнопке. Например: https://track.example.com/abc");
+      errs.push(["o-url", "Ссылка не заполнена"]);
+    } else if (!/^https?:\/\/\S+$/i.test(url)) {
+      fieldErr("#o-url", "Ссылка должна начинаться с http:// или https:// и быть без пробелов.");
+      errs.push(["o-url", "Ссылка указана не полностью"]);
+    }
+
+    var box = $("#offer-errs"), list = $("#offer-err-list");
+    if (errs.length) {
+      list.textContent = "";
+      errs.forEach(function (pair) {
+        var li = el("li"), a = el("a", null, pair[1]);
+        a.href = "#" + pair[0];
+        a.addEventListener("click", function (ev) { ev.preventDefault(); $("#" + pair[0]).focus(); });
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+      box.hidden = false;
+      box.focus();
+      return;
+    }
+    box.hidden = true;
+
+    var data = {
+      title:   title,
+      cat:     $("#o-cat").value,
+      geo:     $("#o-geo").value.trim(),
+      payout:  $("#o-payout").value.trim(),
+      model:   $("#o-model").value.trim(),
+      hold:    $("#o-hold").value.trim(),
+      badge:   $("#o-badge").value.trim(),
+      url:     url,
+      sources: $("#o-sources").value.trim(),
+      note:    $("#o-note").value.trim(),
+      active:  $("#o-active").checked
+    };
+
+    if (editing) {
+      Object.keys(data).forEach(function (k) { editing[k] = data[k]; });
+      say("Оффер «" + title + "» изменён");
+    } else {
+      data.id = "of-" + Date.now().toString(36);
+      DATA.offers.push(data);
+      say("Оффер «" + title + "» добавлен");
+    }
+
+    persist();
+    renderOffers();
+    var id = editing ? editing.id : data.id;
+    offerDlg.close();
+    refocus('[data-act="edit"][data-id="' + cssEsc(id) + '"]');
+  });
+
+  /* Удаление оффера */
+  var confirmDlg = $("#confirm-dlg"), pendingDelete = null, deleteOpener = null;
+
+  function askDelete(o) {
+    pendingDelete = o;
+    deleteOpener = document.activeElement;
+    $("#confirm-h").textContent = "Удалить «" + o.title + "»?";
+    confirmDlg.showModal();
+    $("#confirm-cancel").focus();
+  }
+
+  $("#confirm-cancel").addEventListener("click", function () { confirmDlg.close(); });
+
+  confirmDlg.addEventListener("close", function () {
+    if (deleteOpener && deleteOpener.isConnected) deleteOpener.focus();
+  });
+
+  $("#confirm-ok").addEventListener("click", function () {
+    var o = pendingDelete;
+    if (!o) return;
+    var i = DATA.offers.indexOf(o);
+    // Соседа считаем до удаления — потом индексы уже другие.
+    var next = DATA.offers[i + 1] || DATA.offers[i - 1];
+    DATA.offers.splice(i, 1);
+    persist();
+    renderOffers();
+    deleteOpener = null;
+    confirmDlg.close();
+    shout("Оффер «" + o.title + "» удалён");
+    if (next) refocus('[data-act="del"][data-id="' + cssEsc(next.id) + '"]');
+    else refocus("#offer-add");
+  });
+
+  /* ---------- Публикация, выгрузка, импорт ---------- */
+
+  function stamp() {
+    var d = new Date();
+    var p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+
+  function pubStatus(msg, tone) {
+    var s = $("#pub-status");
+    s.textContent = msg;
+    s.dataset.tone = tone || "";
+    s.hidden = !msg;
+  }
+
+  function dataFileText() {
+    return "/* Каталог витрины. Файл собран админкой. */\nwindow.SITE_DATA = " +
+      JSON.stringify(DATA, null, 2) + ";\n";
+  }
+
+  $("#publish").addEventListener("click", function () {
+    var btn = this;
+    DATA.updated = stamp();
+    persist();
+
+    if (!online) {
+      pubStatus("Сервер не отвечает — опубликовать не выйдет. Нажми «Скачать data.js» и залей файл на хостинг вручную.", "bad");
+      return;
+    }
+
+    btn.setAttribute("aria-disabled", "true");
+    var lbl = btn.textContent;
+    btn.textContent = "Публикуем…";
+    pubStatus("Публикуем изменения…", "");
+
+    api("save", { data: DATA })
+      .then(function (res) {
+        if (res && res.ok) {
+          setDirty(false);
+          pubStatus("Готово. Витрина обновлена — можно открывать сайт и проверять.", "ok");
+          say("Изменения опубликованы");
+        } else if (res && res.error && /Сессия/.test(res.error)) {
+          // Черновик уже в localStorage, поэтому ничего не теряем.
+          pubStatus("Сессия истекла. Введи пароль ещё раз — черновик сохранён, публикацию повторим.", "bad");
+          token = "";
+          try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* ок */ }
+          gate.hidden = false;
+          $("#gate-pass").focus();
+        } else {
+          throw new Error((res && res.error) || "не вышло");
+        }
+      })
+      .catch(function (err) {
+        pubStatus("Не удалось опубликовать: " + (err.message || "сервер не ответил") +
+          ". Черновик цел — попробуй ещё раз или скачай data.js и залей вручную.", "bad");
+        shout("Опубликовать не удалось");
+      })
+      .then(function () {
+        btn.removeAttribute("aria-disabled");
+        btn.textContent = lbl;
+      });
+  });
+
+  function download(name, text, mime) {
+    var blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  $("#download").addEventListener("click", function () {
+    DATA.updated = stamp();
+    persist();
+    download("data.js", dataFileText(), "application/javascript;charset=utf-8");
+    say("Файл data.js скачан");
+  });
+
+  $("#export").addEventListener("click", function () {
+    download("executtr-" + stamp() + ".json", JSON.stringify(DATA, null, 2), "application/json;charset=utf-8");
+    say("Резервная копия скачана");
+  });
+
+  $("#import-file").addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var p = JSON.parse(String(r.result));
+        if (!p || !Array.isArray(p.offers)) throw new Error("в файле нет списка офферов");
+        DATA = p;
+        if (!Array.isArray(DATA.categories) || !DATA.categories.length) DATA.categories = clone(FILE.categories);
+        if (!DATA.site) DATA.site = {};
+        persist();
+        renderAll();
+        shout("Каталог загружен из файла: " + DATA.offers.length + " " +
+          plural(DATA.offers.length, "оффер", "оффера", "офферов"));
+      } catch (e) {
+        shout("Файл не прочитан: " + e.message + ". Каталог не изменён.");
+      }
+    };
+    r.onerror = function () { shout("Файл не прочитан. Каталог не изменён."); };
+    r.readAsText(f);
+    this.value = "";
+  });
+
+  $("#reset").addEventListener("click", function () {
+    if (!window.confirm("Сбросить черновик и вернуться к тому, что сейчас опубликовано на сайте?")) return;
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ок */ }
+    DATA = clone(FILE);
+    setDirty(false);
+    renderAll();
+    refreshPreview();
+    shout("Черновик сброшен");
+  });
+
+  /* ---------- Отрисовка ---------- */
+
+  function renderAll() {
+    fillSiteForm();
+    renderCats();
+    renderOffers();
+  }
+})();

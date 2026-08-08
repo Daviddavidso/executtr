@@ -1,0 +1,9 @@
+# Настройки боевого сайта — пароль в репозиторий не кладём.
+# Скопируй config.sample.php в config.php после заливки на хостинг.
+config.php
+
+# То, что появляется во время работы сайта
+leads.csv
+data.backup.js
+.tokens
+.DS_Store

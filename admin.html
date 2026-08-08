@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Панель управления — EXECUTTR</title>
+<meta name="theme-color" content="#F6F7F4">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%230A0C0A'/><path d='M11 9h11M11 16h8M11 23h11' stroke='%232FBF63' stroke-width='3' stroke-linecap='round'/></svg>">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="styles.css?v=2">
+<link rel="stylesheet" href="admin.css?v=1">
+</head>
+<body class="admin-body">
+
+<a class="skip-link" href="#main">Перейти к содержимому</a>
+
+<!-- ─────────────  ВХОД  ───────────── -->
+<div class="gate" id="gate">
+  <div class="gate__card">
+    <span class="gate__logo" aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="40" height="40" focusable="false"><rect width="32" height="32" rx="9" fill="#0A0C0A"/><path d="M11 9h11M11 16h8M11 23h11" stroke="#2FBF63" stroke-width="3" stroke-linecap="round"/></svg>
+    </span>
+    <h1 class="gate__title">Панель управления</h1>
+    <p class="gate__sub">Отсюда правится витрина: категории, офферы и статусы.</p>
+
+    <p class="err gate__err" id="gate-err" hidden></p>
+
+    <form id="gate-form" novalidate>
+      <div class="field">
+        <label for="gate-user">Пользователь</label>
+        <input id="gate-user" name="username" type="text" value="admin" readonly autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="gate-pass">Пароль</label>
+        <div class="row-inline">
+          <input id="gate-pass" name="password" type="password" required autocomplete="current-password"
+                 autocapitalize="none" autocorrect="off" spellcheck="false" aria-describedby="gate-err">
+          <button type="button" class="btn btn--line btn--sm" id="gate-eye" aria-pressed="false">Показать</button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn--ink btn--lg gate__submit" id="gate-submit">Войти</button>
+    </form>
+
+    <p class="gate__hint" id="gate-offline" hidden>
+      Сервер не отвечает — работаем офлайн. Правки сохранятся в этом браузере,
+      а выгрузить их можно кнопкой «Скачать data.js».
+      <button type="button" class="linkish" id="gate-skip">Продолжить офлайн</button>
+    </p>
+  </div>
+</div>
+
+<!-- ─────────────  ШАПКА  ───────────── -->
+<header class="masthead" id="masthead" hidden>
+  <div class="shell masthead__inner">
+    <a class="brand" href="./" aria-label="EXECUTTR — открыть витрину">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="30" height="30" focusable="false"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M11 9h11M11 16h8M11 23h11" stroke="#2FBF63" stroke-width="3" stroke-linecap="round"/></svg>
+      </span>
+      <span class="brand__text">
+        <b class="brand__name" data-brand>EXECUTTR</b>
+        <span class="brand__sub mono">панель управления</span>
+      </span>
+    </a>
+    <div class="masthead__admin">
+      <a class="btn btn--line btn--sm" href="./" target="_blank" rel="noopener">Открыть витрину<span class="vh"> в новой вкладке</span></a>
+      <button type="button" class="btn btn--line btn--sm" id="logout">Выйти</button>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="admin-main" tabindex="-1" hidden>
+ <div class="shell admin-layout">
+
+  <div class="admin-col">
+
+    <div class="admin-intro">
+      <h1 class="admin-h1">Редактор витрины</h1>
+      <p class="section__sub">Правки живут черновиком в этом браузере. На сайт они попадут после кнопки «Опубликовать».</p>
+    </div>
+
+    <!-- Публикация -->
+    <section class="panel panel--publish" aria-labelledby="pub-h">
+      <div class="panel__head">
+        <h2 id="pub-h">Публикация</h2>
+        <p class="conn mono" id="conn" role="status" aria-live="polite" aria-atomic="true"></p>
+      </div>
+      <div class="publish-row">
+        <button type="button" class="btn btn--ink btn--lg" id="publish">Опубликовать на сайте</button>
+        <button type="button" class="btn btn--line" id="download">Скачать data.js</button>
+        <span class="publish-dirty mono" id="dirty" hidden>есть несохранённые правки</span>
+      </div>
+      <p class="form-status" id="pub-status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+    </section>
+
+    <!-- Настройки -->
+    <section class="panel" aria-labelledby="set-h">
+      <h2 id="set-h">Шапка и контакты</h2>
+      <form id="site-form" class="field-grid" novalidate>
+        <div class="field">
+          <label for="s-name">Название</label>
+          <input id="s-name" type="text" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="s-tagline">Подпись под названием</label>
+          <input id="s-tagline" type="text" autocomplete="off">
+        </div>
+        <div class="field field--full">
+          <label for="s-lead">Абзац на первом экране</label>
+          <textarea id="s-lead" rows="3" autocomplete="off"></textarea>
+        </div>
+        <div class="field">
+          <label for="s-tg">Ссылка на Telegram</label>
+          <input id="s-tg" type="text" autocomplete="off" spellcheck="false" placeholder="https://t.me/executtr" aria-describedby="s-tg-hint">
+          <p class="hint" id="s-tg-hint">Пусто — кнопки «Написать в Telegram» на сайте не будет.</p>
+        </div>
+        <div class="field field--full">
+          <button type="submit" class="btn btn--line">Сохранить в черновик</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Категории -->
+    <section class="panel" aria-labelledby="cats-h">
+      <div class="panel__head">
+        <h2 id="cats-h" tabindex="-1">Категории</h2>
+        <button type="button" class="btn btn--line btn--sm" id="cat-add" aria-haspopup="dialog">Добавить категорию</button>
+      </div>
+      <p class="section__sub">Это кнопки-фильтры на витрине. «Все» — общий фильтр, он не удаляется и не переименовывается.</p>
+
+      <div class="table-wrap">
+        <table class="tbl">
+          <caption id="cat-cap">Категорий: 0</caption>
+          <thead>
+            <tr>
+              <th scope="col">Название</th>
+              <th scope="col">Офферов</th>
+              <th scope="col"><span class="vh">Действия</span></th>
+            </tr>
+          </thead>
+          <tbody id="cat-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Офферы -->
+    <section class="panel" aria-labelledby="offers-h">
+      <div class="panel__head">
+        <h2 id="offers-h" tabindex="-1">Офферы</h2>
+        <button type="button" class="btn btn--ink btn--sm" id="offer-add" aria-haspopup="dialog">Добавить оффер</button>
+      </div>
+
+      <div class="admin-tools">
+        <div class="field field--search">
+          <label class="vh" for="admin-q">Поиск по офферам</label>
+          <input id="admin-q" type="search" placeholder="Название, ГЕО, источник" autocomplete="off">
+        </div>
+        <p class="admin-count mono" id="admin-count" role="status" aria-live="polite" aria-atomic="true"></p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="tbl tbl--offers">
+          <caption>Порядок строк совпадает с порядком карточек на витрине.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Оффер</th>
+              <th scope="col">ГЕО</th>
+              <th scope="col">Ставка</th>
+              <th scope="col">Статус</th>
+              <th scope="col"><span class="vh">Действия</span></th>
+            </tr>
+          </thead>
+          <tbody id="offer-rows"></tbody>
+        </table>
+      </div>
+
+      <p class="admin-empty" id="offer-empty" tabindex="-1" hidden>Ничего не нашлось по запросу.</p>
+    </section>
+
+    <!-- Резерв -->
+    <section class="panel" aria-labelledby="io-h">
+      <h2 id="io-h">Резервная копия</h2>
+      <p class="section__sub">Выгрузи каталог перед крупными правками — файл можно будет залить обратно.</p>
+      <div class="publish-row">
+        <button type="button" class="btn btn--line" id="export">Выгрузить JSON</button>
+        <label class="btn btn--line" for="import-file">Загрузить JSON</label>
+        <input type="file" id="import-file" accept="application/json,.json" class="vh-file">
+        <button type="button" class="btn btn--line" id="reset">Сбросить черновик</button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Предпросмотр -->
+  <aside class="preview-col" aria-labelledby="prev-h">
+    <div class="panel preview">
+      <div class="panel__head">
+        <h2 id="prev-h">Предпросмотр</h2>
+        <button type="button" class="btn btn--line btn--sm" id="prev-refresh">Обновить</button>
+      </div>
+      <p class="hint">Так витрина выглядит с черновиком. На сайте изменения появятся после публикации.</p>
+      <div class="preview__frame">
+        <iframe id="prev-frame" title="Предпросмотр витрины с черновиком" src="./?draft=1" loading="lazy"></iframe>
+      </div>
+    </div>
+  </aside>
+
+ </div>
+</main>
+
+<!-- ─────────────  ДИАЛОГИ  ───────────── -->
+
+<dialog id="offer-dlg" class="dlg" aria-labelledby="offer-dlg-h">
+  <div class="dlg__panel">
+    <h2 id="offer-dlg-h">Новый оффер</h2>
+    <p class="hint">Поля со звёздочкой обязательны.</p>
+
+    <div class="error-summary" id="offer-errs" tabindex="-1" hidden>
+      <h3>Проверь форму</h3>
+      <ul id="offer-err-list"></ul>
+    </div>
+
+    <form id="offer-form" novalidate>
+      <div class="field-grid">
+        <div class="field field--full">
+          <label for="o-title">Название оффера <span class="req" aria-hidden="true">*</span></label>
+          <input id="o-title" type="text" required aria-required="true" autocomplete="off" placeholder="1Win Casino" aria-describedby="o-title-err">
+          <p class="err" id="o-title-err" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="o-cat">Вертикаль <span class="req" aria-hidden="true">*</span></label>
+          <select id="o-cat" required aria-required="true"></select>
+        </div>
+
+        <div class="field">
+          <label for="o-geo">ГЕО</label>
+          <input id="o-geo" type="text" autocomplete="off" placeholder="US, CA, AU" aria-describedby="o-geo-hint">
+          <p class="hint" id="o-geo-hint">Через запятую. Отсюда считается счётчик ГЕО на витрине.</p>
+        </div>
+
+        <div class="field">
+          <label for="o-payout">Ставка</label>
+          <input id="o-payout" type="text" autocomplete="off" placeholder="45 $">
+        </div>
+
+        <div class="field">
+          <label for="o-model">Модель</label>
+          <input id="o-model" type="text" autocomplete="off" placeholder="CPA, RevShare, SOI…">
+        </div>
+
+        <div class="field">
+          <label for="o-hold">Холд</label>
+          <input id="o-hold" type="text" autocomplete="off" placeholder="14 дней">
+        </div>
+
+        <div class="field">
+          <label for="o-badge">Метка на карточке</label>
+          <input id="o-badge" type="text" autocomplete="off" placeholder="Топ недели">
+        </div>
+
+        <div class="field field--full">
+          <label for="o-url">Ссылка <span class="req" aria-hidden="true">*</span></label>
+          <input id="o-url" type="text" required aria-required="true" autocomplete="off" spellcheck="false" placeholder="https://…" aria-describedby="o-url-err o-url-hint">
+          <p class="err" id="o-url-err" hidden></p>
+          <p class="hint" id="o-url-hint">Её забирают по кнопке «Забрать ссылку».</p>
+        </div>
+
+        <div class="field field--full">
+          <label for="o-sources">Источники трафика</label>
+          <input id="o-sources" type="text" autocomplete="off" placeholder="FB, UAC, ASO">
+        </div>
+
+        <div class="field field--full">
+          <label for="o-note">Заметка</label>
+          <textarea id="o-note" rows="3" autocomplete="off" placeholder="Что важно знать перед заливом"></textarea>
+        </div>
+
+        <div class="field field--full">
+          <div class="switch">
+            <input type="checkbox" id="o-active" checked aria-describedby="o-active-hint">
+            <label for="o-active">Оффер активен</label>
+            <span class="switch__state" id="o-active-state">Активен</span>
+          </div>
+          <p class="hint" id="o-active-hint">Снимешь галочку — карточка останется на витрине с пометкой «На паузе», но кнопок «Забрать ссылку» и «Перейти» у неё не будет.</p>
+        </div>
+      </div>
+
+      <div class="dlg__foot">
+        <button type="button" class="btn btn--line" id="offer-cancel">Отмена</button>
+        <button type="submit" class="btn btn--ink">Сохранить оффер</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<dialog id="cat-dlg" class="dlg" aria-labelledby="cat-dlg-h">
+  <div class="dlg__panel dlg__panel--sm">
+    <h2 id="cat-dlg-h">Новая категория</h2>
+    <form id="cat-form" novalidate>
+      <div class="field">
+        <label for="c-name">Название</label>
+        <input id="c-name" type="text" required aria-required="true" autocomplete="off" placeholder="Crypto" aria-describedby="c-name-err">
+        <p class="err" id="c-name-err" hidden></p>
+      </div>
+      <div class="dlg__foot">
+        <button type="button" class="btn btn--line" id="cat-cancel">Отмена</button>
+        <button type="submit" class="btn btn--ink" id="cat-save">Добавить</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<dialog id="catdel-dlg" class="dlg" aria-labelledby="catdel-h" aria-describedby="catdel-desc">
+  <div class="dlg__panel dlg__panel--sm">
+    <form id="catdel-form" novalidate>
+      <h2 id="catdel-h">Удалить категорию?</h2>
+      <p class="hint" id="catdel-desc"></p>
+      <div class="field" id="catdel-move" hidden>
+        <label for="catdel-target">Перенести офферы в категорию</label>
+        <select id="catdel-target" aria-describedby="catdel-err">
+          <option value="">— выбери категорию —</option>
+        </select>
+        <p class="err" id="catdel-err" hidden></p>
+      </div>
+      <div class="dlg__foot">
+        <button type="button" class="btn btn--line" id="catdel-cancel">Отмена</button>
+        <button type="submit" class="btn btn--danger">Удалить категорию</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<dialog id="confirm-dlg" class="dlg" aria-labelledby="confirm-h" aria-describedby="confirm-text">
+  <div class="dlg__panel dlg__panel--sm">
+    <h2 id="confirm-h">Удалить оффер?</h2>
+    <p class="hint" id="confirm-text">Карточка исчезнет с витрины. Вернуть её можно только из резервной копии.</p>
+    <div class="dlg__foot">
+      <button type="button" class="btn btn--line" id="confirm-cancel">Отмена</button>
+      <button type="button" class="btn btn--danger" id="confirm-ok">Удалить</button>
+    </div>
+  </div>
+</dialog>
+
+<p class="vh" id="live" role="status" aria-live="polite" aria-atomic="true"></p>
+<p class="vh" id="live-alert" role="alert" aria-atomic="true"></p>
+
+<script src="data.js?v=1"></script>
+<script src="admin.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EXECUTTR — витрина офферов</title>
+<meta name="description" content="Актуальные офферы команды: ставка, ГЕО, холд и допустимые источники трафика. Ссылку можно забрать в один клик.">
+<meta name="theme-color" content="#F6F7F4">
+<meta property="og:title" content="EXECUTTR — витрина офферов">
+<meta property="og:description" content="Ставка, ГЕО, холд и источники по каждому офферу. Ссылка забирается в один клик.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%230A0C0A'/><path d='M11 9h11M11 16h8M11 23h11' stroke='%232FBF63' stroke-width='3' stroke-linecap='round'/></svg>">
+<link rel="preload" href="fonts/golos-q5uCsoe9Lv5t7Meb31EcExd8hK5SAMqbpw.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="styles.css?v=2">
+<!-- Выбор «фон в движении» читаем до отрисовки, иначе на долю секунды мигнёт анимация. -->
+<script>try{if(localStorage.getItem("executtr:motion")==="off")document.documentElement.dataset.motion="off";}catch(e){}</script>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Перейти к содержимому</a>
+
+<header class="masthead" id="masthead">
+  <div class="shell masthead__inner">
+    <a class="brand" href="./" aria-label="EXECUTTR — на главную">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="30" height="30" focusable="false"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M11 9h11M11 16h8M11 23h11" stroke="#2FBF63" stroke-width="3" stroke-linecap="round"/></svg>
+      </span>
+      <span class="brand__text">
+        <b class="brand__name" data-brand>EXECUTTR</b>
+        <span class="brand__sub mono" data-tagline>витрина офферов</span>
+      </span>
+    </a>
+
+    <nav class="masthead__nav" id="site-nav" aria-label="Разделы сайта">
+      <ul role="list">
+        <li><a href="#catalog">Витрина</a></li>
+        <li><a href="#flow">Как работаем</a></li>
+        <li><a href="#faq">Вопросы</a></li>
+        <li><a href="#lead">Заявка</a></li>
+      </ul>
+      <a class="btn btn--ink masthead__cta" href="#lead">Оставить заявку</a>
+    </nav>
+
+    <button type="button" class="burger" id="burger" aria-expanded="false" aria-controls="site-nav">
+      <span class="burger__bars" aria-hidden="true"><i></i><i></i></span>
+      <span class="burger__label">Меню</span>
+    </button>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+
+  <!-- ─────────────────────────  ХИРО  ───────────────────────── -->
+  <section class="hero" id="hero">
+    <div class="hero__stage" aria-hidden="true">
+      <span class="hero__grid" data-par="0.06"></span>
+      <span class="hero__blob hero__blob--a" data-par="0.20"></span>
+      <span class="hero__blob hero__blob--b" data-par="-0.14"></span>
+      <span class="hero__mark hero__mark--tl" data-par="0.10">
+        <svg viewBox="0 0 24 24" width="22" height="22" focusable="false"><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+      </span>
+      <span class="hero__mark hero__mark--br" data-par="-0.08">
+        <svg viewBox="0 0 24 24" width="18" height="18" focusable="false"><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.2"/></svg>
+      </span>
+      <span class="hero__glass" data-par="0.16">
+        <b class="mono">LIVE</b>
+        <i class="hero__glass-bar"><i style="width:82%"></i></i>
+        <b class="mono">US · NG · DE</b>
+      </span>
+      <span class="hero__noise"></span>
+    </div>
+
+    <div class="shell hero__inner">
+      <p class="eyebrow mono">
+        <span class="eyebrow__idx">01</span>
+        <span>витрина офферов</span>
+        <span class="eyebrow__dot" aria-hidden="true">·</span>
+        <span>обновлено <time id="updated-at" datetime="2026-08-09">09.08.2026</time></span>
+      </p>
+
+      <h1 class="hero__title">
+        Бери ссылку<br>
+        и <span class="hero__hl"><span class="hero__hl-in">лей</span></span>
+      </h1>
+
+      <p class="hero__lead" data-lead>Здесь только то, что сейчас в работе: ставка, ГЕО, холд и допустимые источники по каждому офферу. Всё, что встало на паузу, остаётся на витрине серым — чтобы ты видел картину целиком, а не гадал, куда делся оффер.</p>
+
+      <div class="hero__actions">
+        <a class="btn btn--ink btn--lg" href="#catalog">Смотреть офферы</a>
+        <a class="btn btn--line btn--lg" id="hero-tg" href="https://t.me/executtr" target="_blank" rel="noopener">Написать в Telegram<span class="vh"> (откроется в новой вкладке)</span></a>
+      </div>
+
+      <ul class="hero__stats glass" role="list" data-par="0.05">
+        <li>
+          <b class="mono" id="stat-active">—</b>
+          <span>офферов в работе</span>
+        </li>
+        <li>
+          <b class="mono" id="stat-geo">—</b>
+          <span>ГЕО в связках</span>
+        </li>
+        <li>
+          <b class="mono" id="stat-cats">—</b>
+          <span>вертикали</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  ТИКЕР  ───────────────────────── -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker__track" id="ticker-track"></div>
+  </div>
+
+  <!-- ─────────────────────────  ВИТРИНА  ───────────────────────── -->
+  <section class="section catalog" id="catalog" aria-labelledby="catalog-h">
+    <div class="shell">
+      <div class="section__head">
+        <p class="eyebrow mono"><span class="eyebrow__idx">02</span><span>каталог</span></p>
+        <h2 class="section__title" id="catalog-h">Офферы</h2>
+        <p class="section__sub">Фильтруй по вертикали или ищи по названию, ГЕО и источнику. Карточки с пометкой «На паузе» временно не льём — ссылку по ним не забрать.</p>
+      </div>
+
+      <div class="tools">
+        <div class="tools__search">
+          <label class="vh" for="q">Поиск по офферам</label>
+          <span class="tools__ico" aria-hidden="true">
+            <svg viewBox="0 0 20 20" width="17" height="17" focusable="false"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13.5 13.5 17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </span>
+          <input type="search" id="q" placeholder="1Win, Нигерия, FB…" autocomplete="off" spellcheck="false" aria-describedby="result-count">
+        </div>
+
+        <div class="filters" id="filters" role="group" aria-label="Фильтр по вертикали"></div>
+      </div>
+
+      <p class="result-count mono" id="result-count" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <ul class="cards" id="cards" role="list"></ul>
+
+      <p class="empty" id="empty" hidden>
+        Ничего не нашлось. Попробуй другое слово или сбрось фильтр —
+        <button type="button" class="linkish" id="reset-filters">показать все офферы</button>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  КАК РАБОТАЕМ  ───────────────────────── -->
+  <section class="section flow" id="flow" aria-labelledby="flow-h">
+    <span class="flow__blob" aria-hidden="true" data-par="0.12"></span>
+    <div class="shell">
+      <div class="section__head">
+        <p class="eyebrow mono"><span class="eyebrow__idx">03</span><span>процесс</span></p>
+        <h2 class="section__title" id="flow-h">Как это работает</h2>
+      </div>
+
+      <ol class="steps" role="list">
+        <li class="step">
+          <span class="step__n mono" aria-hidden="true">01</span>
+          <h3>Забираешь ссылку</h3>
+          <p>Открываешь карточку нужного оффера, жмёшь «Забрать ссылку» — она уже в буфере. Ничего запрашивать и ждать не нужно.</p>
+        </li>
+        <li class="step">
+          <span class="step__n mono" aria-hidden="true">02</span>
+          <h3>Льёшь по своим источникам</h3>
+          <p>В карточке написано, какие источники рекламодатель принимает. Если источника там нет — сначала спроси, потом лей, иначе рискуешь шейвом.</p>
+        </li>
+        <li class="step">
+          <span class="step__n mono" aria-hidden="true">03</span>
+          <h3>Получаешь выплату</h3>
+          <p>Холд по каждому офферу указан в карточке. Прошёл холд — деньги уходят на твои реквизиты, без напоминаний с твоей стороны.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  FAQ  ───────────────────────── -->
+  <section class="section faq" id="faq" aria-labelledby="faq-h">
+    <div class="shell shell--narrow">
+      <div class="section__head">
+        <p class="eyebrow mono"><span class="eyebrow__idx">04</span><span>вопросы</span></p>
+        <h2 class="section__title" id="faq-h">Что обычно спрашивают</h2>
+      </div>
+      <div class="faq__list" id="faq-list"></div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────  ЗАЯВКА  ───────────────────────── -->
+  <section class="section lead" id="lead" aria-labelledby="lead-h">
+    <span class="lead__blob" aria-hidden="true" data-par="-0.10"></span>
+    <div class="shell shell--narrow">
+      <div class="section__head">
+        <p class="eyebrow mono"><span class="eyebrow__idx">05</span><span>заявка</span></p>
+        <h2 class="section__title" id="lead-h">Хочешь получить доступ?</h2>
+        <p class="section__sub">Напиши, откуда льёшь и какие объёмы тянешь. Отвечаем в течение дня — обычно быстрее.</p>
+      </div>
+
+      <div class="glass lead__card">
+        <div class="error-summary" id="lead-errors" tabindex="-1" hidden>
+          <h3>Проверь форму</h3>
+          <ul id="lead-error-list"></ul>
+        </div>
+
+        <p class="lead__req">Поля со звёздочкой обязательны.</p>
+
+        <form id="lead-form" novalidate>
+          <div class="field-grid">
+            <div class="field">
+              <label for="f-name">Как тебя зовут <span class="req" aria-hidden="true">*</span></label>
+              <input id="f-name" name="name" type="text" required aria-required="true" autocomplete="name" aria-describedby="f-name-err">
+              <p class="err" id="f-name-err" hidden></p>
+            </div>
+
+            <div class="field">
+              <label for="f-contact">Telegram или почта <span class="req" aria-hidden="true">*</span></label>
+              <input id="f-contact" name="contact" type="text" required aria-required="true" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="@nickname" aria-describedby="f-contact-err f-contact-hint">
+              <p class="hint" id="f-contact-hint">Куда ответить. Ник с собакой или адрес почты.</p>
+              <p class="err" id="f-contact-err" hidden></p>
+            </div>
+
+            <div class="field field--full">
+              <label for="f-source">Источники трафика</label>
+              <input id="f-source" name="source" type="text" autocomplete="off" placeholder="FB, UAC, ASO, SEO…" aria-describedby="f-source-hint">
+              <p class="hint" id="f-source-hint">Через запятую. Помогает сразу подобрать подходящие офферы.</p>
+            </div>
+
+            <div class="field field--full">
+              <label for="f-comment">Что важно знать</label>
+              <textarea id="f-comment" name="comment" rows="4" autocomplete="off" placeholder="Объёмы, ГЕО, опыт по вертикалям"></textarea>
+            </div>
+          </div>
+
+          <!-- Ловушка для ботов: живой человек этого поля не видит. -->
+          <div class="hp" aria-hidden="true">
+            <label for="f-company">Компания</label>
+            <input id="f-company" name="company" type="text" tabindex="-1" autocomplete="off">
+          </div>
+
+          <div class="lead__foot">
+            <button type="submit" class="btn btn--ink btn--lg" id="lead-submit">Отправить заявку</button>
+            <p class="lead__note">Никакого спама. Контакт нужен только чтобы ответить.</p>
+          </div>
+
+          <p class="form-status" id="lead-status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="shell footer__inner">
+    <div class="footer__brand">
+      <b data-brand>EXECUTTR</b>
+      <span class="mono" data-tagline>витрина офферов</span>
+    </div>
+    <nav class="footer__nav" aria-label="Разделы сайта в подвале">
+      <ul role="list">
+        <li><a href="#catalog">Витрина</a></li>
+        <li><a href="#flow">Как работаем</a></li>
+        <li><a href="#faq">Вопросы</a></li>
+        <li><a href="#lead">Заявка</a></li>
+      </ul>
+    </nav>
+    <div class="footer__meta mono">
+      <a id="footer-tg" href="https://t.me/executtr" target="_blank" rel="noopener">Telegram<span class="vh"> (откроется в новой вкладке)</span></a>
+      <span aria-hidden="true">·</span>
+      <span>обновлено <span id="updated-foot">09.08.2026</span></span>
+      <button type="button" class="motion-toggle" id="motion-toggle" aria-pressed="true">Фон в движении</button>
+    </div>
+  </div>
+</footer>
+
+<!-- Всплывающее уведомление о копировании.
+     Это только картинка: озвучивает событие соседний #live, иначе фраза
+     прочиталась бы дважды. Поэтому никаких кнопок и ссылок внутри. -->
+<div class="toast" id="toast" aria-hidden="true">
+  <span class="toast__ico">
+    <svg viewBox="0 0 20 20" width="16" height="16" focusable="false"><path d="m4 10.5 4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </span>
+  <span id="toast-text"></span>
+</div>
+
+<p class="vh" id="live" role="status" aria-live="polite" aria-atomic="true"></p>
+<p class="vh" id="live-alert" role="alert" aria-atomic="true"></p>
+<span class="vh" id="newtab-hint">откроется в новой вкладке</span>
+
+<script src="data.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
