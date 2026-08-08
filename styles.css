@@ -1169,6 +1169,8 @@ a { color: inherit; }
 }
 .form-status[data-tone="ok"]  { background: var(--green-soft); color: var(--green-ink); border: 1.5px solid var(--green-ui); }
 .form-status[data-tone="bad"] { background: #FDF2F1; color: #8C1D18; border: 1.5px solid #B3261E; }
+/* Нейтральный тон: это не ошибка человека и чинить ему нечего */
+.form-status[data-tone="info"] { background: var(--paper-pause); color: var(--ink); border: 1.5px solid var(--edge); }
 
 /* --------------------------------------------------------------------------
    Подвал
