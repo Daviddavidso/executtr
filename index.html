@@ -241,7 +241,10 @@
             <p class="lead__note">Никакого спама. Контакт нужен только чтобы ответить.</p>
           </div>
 
-          <p class="form-status" id="lead-status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+          <!-- Всегда в DOM и никогда не hidden: скрытый блок выпадает из
+               дерева доступности, и сообщение о результате не прочитается.
+               Пустой прячется через .form-status:empty. -->
+          <p class="form-status" id="lead-status" role="status" aria-live="polite" aria-atomic="true"></p>
         </form>
       </div>
     </div>

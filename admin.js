@@ -730,11 +730,17 @@
     return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
   }
 
+  /* Как и на витрине: блок не прячем атрибутом hidden (он выкидывает его
+     из дерева доступности), а чистим и заполняем в разных тиках, чтобы
+     повторное сообщение с тем же текстом тоже прочиталось. */
+  var pubTimer = null;
   function pubStatus(msg, tone) {
     var s = $("#pub-status");
-    s.textContent = msg;
+    clearTimeout(pubTimer);
+    s.textContent = "";
     s.dataset.tone = tone || "";
-    s.hidden = !msg;
+    if (!msg) return;
+    pubTimer = setTimeout(function () { s.textContent = msg; }, 100);
   }
 
   function dataFileText() {

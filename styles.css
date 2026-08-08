@@ -1167,10 +1167,24 @@ a { color: inherit; }
   font-weight: 600;
   line-height: 1.5;
 }
+/* Пустой блок остаётся в дереве доступности, но не занимает места.
+   display:none здесь нельзя — из-за него сообщение не озвучивается. */
+.form-status:empty { padding: 0; border: 0; background: none; margin: 0; }
+
+.form-status::before { font-weight: 800; margin-right: 8px; }
 .form-status[data-tone="ok"]  { background: var(--green-soft); color: var(--green-ink); border: 1.5px solid var(--green-ui); }
+.form-status[data-tone="ok"]::before   { content: "✓"; }
 .form-status[data-tone="bad"] { background: #FDF2F1; color: #8C1D18; border: 1.5px solid #B3261E; }
-/* Нейтральный тон: это не ошибка человека и чинить ему нечего */
-.form-status[data-tone="info"] { background: var(--paper-pause); color: var(--ink); border: 1.5px solid var(--edge); }
+.form-status[data-tone="bad"]::before  { content: "✕"; }
+/* Третий тон — не ошибка человека, чинить ему нечего. Серый читался бы
+   как «пауза»: этот цвет у нас уже занят статусом офферов. */
+.form-status[data-tone="info"] { background: #EEF4FC; color: #0B4A8F; border: 1.5px solid #2563AE; }
+.form-status[data-tone="info"]::before { content: "i"; font-style: italic; }
+.form-status a { color: inherit; text-underline-offset: 3px; }
+
+@media (forced-colors: active) {
+  .form-status { border: 1.5px solid CanvasText; }
+}
 
 /* --------------------------------------------------------------------------
    Подвал

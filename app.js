@@ -638,13 +638,45 @@
     box.focus();
   }
 
-  function setStatus(msg, tone) {
+  /* Сообщение о результате отправки.
+     Блок всегда в DOM (hidden выкинул бы его из дерева доступности, и
+     сообщение бы не прочиталось), а пустой прячется через :empty в CSS.
+     Чистим и пишем в разных тиках: иначе повторная отправка с тем же
+     текстом ничего не меняет в DOM и скринридер молчит. */
+  var statusTimer = null;
+  function setStatus(msg, tone, extra) {
     var s = $("#lead-status");
     if (!s) return;
-    s.textContent = msg;
-    s.dataset.tone = tone;
-    s.hidden = !msg;
+    clearTimeout(statusTimer);
+    s.textContent = "";
+    s.dataset.tone = tone || "";
+    if (!msg) return;
+    statusTimer = setTimeout(function () {
+      // Собираем целиком и вставляем разом — aria-atomic прочитает одной фразой.
+      var frag = document.createDocumentFragment();
+      frag.appendChild(document.createTextNode(msg));
+      if (extra) { frag.appendChild(document.createTextNode(" ")); frag.appendChild(extra); }
+      s.appendChild(frag);
+    }, 100);
   }
+
+  /* Ссылка на Telegram прямо внутри сообщения: отсылать человека «в шапку»
+     бессмысленно, туда ещё надо доехать. Блок стоит сразу за кнопкой,
+     поэтому следующий Tab попадает именно на неё. */
+  function tgLink() {
+    var tg = (SITE.telegram || "").trim();
+    if (!tg) return null;
+    var a = document.createElement("a");
+    a.href = tg;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = "Написать в Telegram";
+    a.appendChild(el("span", "vh", " (откроется в новой вкладке)"));
+    return a;
+  }
+
+  // Определяется один раз: если бэкенда нет, второй запрос его не найдёт.
+  var demoMode = false;
 
   if (form) {
     form.addEventListener("submit", function (e) {
@@ -653,8 +685,9 @@
 
       var errs = validate();
       if (errs.length) {
+        // Ничего не озвучиваем отдельно: фокус уезжает в сводку ошибок,
+        // и она читается сама. Два сообщения подряд перебивают друг друга.
         showErrorSummary(errs);
-        say("В форме " + errs.length + " " + plural(errs.length, "ошибка", "ошибки", "ошибок"));
         return;
       }
       showErrorSummary([]);
@@ -679,51 +712,52 @@
         company: $("#f-company").value.trim()
       };
 
+      /* Сюда витрину нередко выкладывают на статику (демо, GitHub Pages),
+         где api.php просто нет. Отличаем это от обрыва связи: без бэкенда
+         ответ приходит, но он не JSON; при обрыве fetch падает целиком.
+         Путать нельзя — иначе человеку на боевом домене скажут «это демо». */
+      if (demoMode) { showDemo(); finish(); return; }
+
+      function finish() {
+        delete btn.dataset.pending;
+        btn.removeAttribute("aria-disabled");
+        btn.textContent = label;
+      }
+
+      function showDemo() {
+        demoMode = true;
+        setStatus(
+          "Это демо-версия сайта — отсюда заявка не уходит. На рабочем домене форма подключена, а пока —",
+          "info", tgLink()
+        );
+      }
+
       fetch("api.php?action=lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       })
-        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
-        .then(function (res) {
-          if (res && res.ok) {
-            form.reset();
-            setStatus("Заявка ушла. Ответим в течение дня — следи за Telegram.", "ok");
-            say("Заявка отправлена");
-          } else {
-            throw new Error((res && res.error) || "fail");
-          }
-        })
-        .catch(function () {
-          // Отличаем «сервера тут нет вообще» (демо на статике) от «связь отвалилась».
-          // Первое чинить нечем, и подавать это как ошибку — врать человеку.
-          return fetch("api.php?action=ping", { cache: "no-store" })
-            .then(function (r) { return r.ok ? r.json() : null; })
-            .catch(function () { return null; })
-            .then(function (probe) {
-              var tg = (SITE.telegram || "").trim();
-              if (probe && probe.ok) {
-                setStatus(
-                  "Не получилось отправить — похоже, пропала связь. Данные в полях остались, нажми «Отправить» ещё раз." +
-                  (tg ? " Если не выходит — напиши в Telegram." : ""),
-                  "bad"
-                );
-                say("Отправить не удалось");
-              } else {
-                setStatus(
-                  "Это демо-версия: форма заработает на боевом хостинге." +
-                  (tg ? " Пока напиши в Telegram — ссылка в шапке и в подвале." : ""),
-                  "info"
-                );
-                say("Демо-версия: форма пока не отправляется");
+        .then(
+          function (r) {
+            return r.text().then(function (body) {
+              var res = null;
+              try { res = JSON.parse(body); } catch (e) { res = null; }
+              if (!res) { showDemo(); return; }       // ответ есть, но это не наш бэкенд
+              if (res.ok) {
+                form.reset();
+                setStatus("Заявка ушла. Ответим в течение дня — следи за Telegram.", "ok");
+                return;
               }
+              setStatus("Заявка не прошла: " + (res.error || "сервер отказал") +
+                ". Поправь и отправь ещё раз.", "bad");
             });
-        })
-        .then(function () {
-          delete btn.dataset.pending;
-          btn.removeAttribute("aria-disabled");
-          btn.textContent = label;
-        });
+          },
+          function () {
+            setStatus("Не получилось отправить — похоже, пропала связь. " +
+              "Всё, что ты ввёл, осталось в полях: нажми «Отправить» ещё раз.", "bad", tgLink());
+          }
+        )
+        .then(finish, finish);
     });
 
     // Ошибку снимаем, как только человек начал править поле.
