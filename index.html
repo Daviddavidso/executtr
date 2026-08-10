@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EXECUTTR — витрина офферов</title>
-<meta name="description" content="Актуальные офферы команды: ставка, ГЕО, холд и допустимые источники трафика. Ссылку можно забрать в один клик.">
+<meta name="description" content="Кредитные и дебетовые карты, займы, кредиты наличными и РКО в одном месте: условия, выплата и ссылка, которую можно скопировать в один клик.">
 <meta name="theme-color" content="#F6F7F4">
 <meta property="og:title" content="EXECUTTR — витрина офферов">
-<meta property="og:description" content="Ставка, ГЕО, холд и источники по каждому офферу. Ссылка забирается в один клик.">
+<meta property="og:description" content="Карты, займы и РКО: условия и выплата по каждому офферу. Ссылка копируется в один клик.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%230A0C0A'/><path d='M11 9h11M11 16h8M11 23h11' stroke='%232FBF63' stroke-width='3' stroke-linecap='round'/></svg>">
 <link rel="preload" href="fonts/golos-q5uCsoe9Lv5t7Meb31EcExd8hK5SAMqbpw.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=10">
 <!-- Выбор «фон в движении» читаем до отрисовки, иначе на долю секунды мигнёт анимация. -->
 <script>try{if(localStorage.getItem("executtr:motion")==="off")document.documentElement.dataset.motion="off";}catch(e){}</script>
 </head>
@@ -57,6 +57,10 @@
       <span class="hero__grid" data-par="0.06"></span>
       <span class="hero__blob hero__blob--a" data-par="0.20"></span>
       <span class="hero__blob hero__blob--b" data-par="-0.14"></span>
+      <!-- Рифлёное стекло поверх зелёного пятна: тот самый «рельефный
+           эффект» из присланных примеров. Двигается медленнее пятна,
+           поэтому на скролле полосы «переливаются». -->
+      <span class="hero__ribs" data-par="-0.05"></span>
       <span class="hero__mark hero__mark--tl" data-par="0.10">
         <svg viewBox="0 0 24 24" width="22" height="22" focusable="false"><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
       </span>
@@ -66,7 +70,7 @@
       <span class="hero__glass" data-par="0.16">
         <b class="mono">LIVE</b>
         <i class="hero__glass-bar"><i style="width:82%"></i></i>
-        <b class="mono">US · NG · DE</b>
+        <b class="mono">КАРТЫ · ЗАЙМЫ · РКО</b>
       </span>
       <span class="hero__noise"></span>
     </div>
@@ -81,10 +85,10 @@
 
       <h1 class="hero__title">
         Бери ссылку<br>
-        и <span class="hero__hl"><span class="hero__hl-in">лей</span></span>
+        и <span class="hero__hl"><span class="hero__hl-in">отправляй</span></span>
       </h1>
 
-      <p class="hero__lead" data-lead>Здесь только то, что сейчас в работе: ставка, ГЕО, холд и допустимые источники по каждому офферу. Всё, что встало на паузу, остаётся на витрине серым — чтобы ты видел картину целиком, а не гадал, куда делся оффер.</p>
+      <p class="hero__lead" data-lead>Кредитки, дебетовки, займы и РКО — всё в одном месте. Открыл карточку, скопировал ссылку, отправил клиенту в личку. Всё, что встало на паузу, остаётся на витрине серым — чтобы ты видел картину целиком, а не гадал, куда делся оффер.</p>
 
       <div class="hero__actions">
         <a class="btn btn--ink btn--lg" href="#catalog">Смотреть офферы</a>
@@ -97,12 +101,12 @@
           <span>офферов в работе</span>
         </li>
         <li>
-          <b class="mono" id="stat-geo">—</b>
-          <span>ГЕО в связках</span>
+          <b class="mono" id="stat-banks">—</b>
+          <span>банков и партнёров</span>
         </li>
         <li>
           <b class="mono" id="stat-cats">—</b>
-          <span>вертикали</span>
+          <span>категории продуктов</span>
         </li>
       </ul>
     </div>
@@ -119,7 +123,7 @@
       <div class="section__head">
         <p class="eyebrow mono"><span class="eyebrow__idx">02</span><span>каталог</span></p>
         <h2 class="section__title" id="catalog-h">Офферы</h2>
-        <p class="section__sub">Фильтруй по вертикали или ищи по названию, ГЕО и источнику. Карточки с пометкой «На паузе» временно не льём — ссылку по ним не забрать.</p>
+        <p class="section__sub">Фильтруй по категории или ищи по банку и условиям. Карточки с пометкой «На паузе» сейчас не в работе — ссылку по ним забрать нельзя.</p>
       </div>
 
       <div class="tools">
@@ -128,13 +132,15 @@
           <span class="tools__ico" aria-hidden="true">
             <svg viewBox="0 0 20 20" width="17" height="17" focusable="false"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13.5 13.5 17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </span>
-          <input type="search" id="q" placeholder="1Win, Нигерия, FB…" autocomplete="off" spellcheck="false" aria-describedby="result-count">
+          <input type="search" id="q" placeholder="Т-Банк, кэшбэк, займ…" autocomplete="off" spellcheck="false" aria-describedby="result-count">
         </div>
 
-        <div class="filters" id="filters" role="group" aria-label="Фильтр по вертикали"></div>
+        <div class="filters" id="filters" role="group" aria-label="Фильтр по категории продукта"></div>
       </div>
 
-      <p class="result-count mono" id="result-count" role="status" aria-live="polite" aria-atomic="true"></p>
+      <!-- Не живая область: результат озвучивает общий #live, а этот абзац
+           заодно служит описанием поля поиска — иначе фраза читалась бы дважды. -->
+      <p class="result-count mono" id="result-count"></p>
 
       <ul class="cards" id="cards" role="list"></ul>
 
@@ -157,18 +163,18 @@
       <ol class="steps" role="list">
         <li class="step">
           <span class="step__n mono" aria-hidden="true">01</span>
-          <h3>Забираешь ссылку</h3>
-          <p>Открываешь карточку нужного оффера, жмёшь «Забрать ссылку» — она уже в буфере. Ничего запрашивать и ждать не нужно.</p>
+          <h3>Копируешь ссылку</h3>
+          <p>Открываешь карточку нужного оффера, жмёшь «Скопировать ссылку» — она уже в буфере. Ничего запрашивать и ждать не нужно.</p>
         </li>
         <li class="step">
           <span class="step__n mono" aria-hidden="true">02</span>
-          <h3>Льёшь по своим источникам</h3>
-          <p>В карточке написано, какие источники рекламодатель принимает. Если источника там нет — сначала спроси, потом лей, иначе рискуешь шейвом.</p>
+          <h3>Отправляешь клиенту</h3>
+          <p>Кидаешь ссылку в личку как есть. Не сокращай и не переписывай хвост: внутри твоя метка, по ней заявка привязывается к тебе.</p>
         </li>
         <li class="step">
           <span class="step__n mono" aria-hidden="true">03</span>
           <h3>Получаешь выплату</h3>
-          <p>Холд по каждому офферу указан в карточке. Прошёл холд — деньги уходят на твои реквизиты, без напоминаний с твоей стороны.</p>
+          <p>Клиент оформил — заявка попала в отчёт. Что считается результатом, написано в карточке: активация карты, выдача займа или первый платёж по счёту.</p>
         </li>
       </ol>
     </div>
@@ -192,7 +198,7 @@
       <div class="section__head">
         <p class="eyebrow mono"><span class="eyebrow__idx">05</span><span>заявка</span></p>
         <h2 class="section__title" id="lead-h">Хочешь получить доступ?</h2>
-        <p class="section__sub">Напиши, откуда льёшь и какие объёмы тянешь. Отвечаем в течение дня — обычно быстрее.</p>
+        <p class="section__sub">Напиши, откуда клиенты и сколько заявок в месяц тянешь. Отвечаем в течение дня — обычно быстрее.</p>
       </div>
 
       <div class="glass lead__card">
@@ -219,14 +225,14 @@
             </div>
 
             <div class="field field--full">
-              <label for="f-source">Источники трафика</label>
-              <input id="f-source" name="source" type="text" autocomplete="off" placeholder="FB, UAC, ASO, SEO…" aria-describedby="f-source-hint">
+              <label for="f-source">Откуда клиенты</label>
+              <input id="f-source" name="source" type="text" autocomplete="off" placeholder="личка в Telegram, чаты, знакомые, реклама…" aria-describedby="f-source-hint">
               <p class="hint" id="f-source-hint">Через запятую. Помогает сразу подобрать подходящие офферы.</p>
             </div>
 
             <div class="field field--full">
               <label for="f-comment">Что важно знать</label>
-              <textarea id="f-comment" name="comment" rows="4" autocomplete="off" placeholder="Объёмы, ГЕО, опыт по вертикалям"></textarea>
+              <textarea id="f-comment" name="comment" rows="4" autocomplete="off" placeholder="Сколько заявок в месяц, с какими продуктами уже работал"></textarea>
             </div>
           </div>
 
@@ -287,9 +293,8 @@
 
 <p class="vh" id="live" role="status" aria-live="polite" aria-atomic="true"></p>
 <p class="vh" id="live-alert" role="alert" aria-atomic="true"></p>
-<span class="vh" id="newtab-hint">откроется в новой вкладке</span>
 
-<script src="data.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="data.js?v=10"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>

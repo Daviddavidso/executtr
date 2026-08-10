@@ -484,6 +484,40 @@ a { color: inherit; }
   opacity: .85;
 }
 
+/* Рифлёное стекло: вертикальные полосы поверх зелёного пятна.
+   Полосы полупрозрачные, поэтому пятно за ними «ломается», как за
+   настоящим рельефным стеклом. Где backdrop-filter не поддерживается,
+   остаются просто полосы — эффект слабее, но не ломается. */
+.hero__ribs {
+  position: absolute;
+  top: 2%; right: 2%;
+  width: min(26vw, 290px);
+  height: 74%;
+  border-radius: 28px;
+  transform: rotate(2.5deg);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,.74) 0 9px,
+      rgba(255,255,255,.24) 9px 19px
+    );
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.7),
+    inset 0 1px 0 rgba(255,255,255,.9),
+    0 46px 90px -56px rgba(10,12,10,.55);
+}
+@supports (backdrop-filter: blur(1px)) {
+  .hero__ribs {
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,.6) 0 9px,
+      rgba(255,255,255,.12) 9px 19px
+    );
+    -webkit-backdrop-filter: blur(7px) saturate(1.15);
+            backdrop-filter: blur(7px) saturate(1.15);
+  }
+}
+
 .hero__mark { position: absolute; color: var(--edge); }
 .hero__mark--tl { top: 16%; left: 4%; }
 .hero__mark--br { bottom: 24%; right: 8%; }
@@ -491,7 +525,7 @@ a { color: inherit; }
 /* Матовая пластинка поверх зелёного пятна — здесь стекло и читается */
 .hero__glass {
   position: absolute;
-  top: 32%; right: 11%;
+  top: 11%; right: 6%;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -526,7 +560,7 @@ a { color: inherit; }
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");
 }
 
-@media (max-width: 1023.98px) { .hero__glass { display: none; } }
+@media (max-width: 1023.98px) { .hero__glass, .hero__ribs { display: none; } }
 
 @media (max-width: 759.98px) {
   .hero__mark { display: none; }
@@ -537,23 +571,29 @@ a { color: inherit; }
 .hero__inner { position: relative; z-index: 1; }
 
 .hero__title {
-  font-size: clamp(44px, 15vw, 132px);
+  font-size: clamp(42px, 13.4vw, 116px);
   font-weight: 900;
   letter-spacing: -0.055em;
   line-height: .94;
   text-transform: uppercase;
   margin-bottom: 26px;
 }
-@media (min-width: 1024px) { .hero__title { max-width: 12ch; } }
+@media (min-width: 1024px) { .hero__title { max-width: 13ch; } }
 
 /* Зелёное пятно под словом — отсылка к «моховым» буквам из референса */
 .hero__hl { position: relative; display: inline-block; isolation: isolate; }
 .hero__hl::before {
   content: "";
   position: absolute;
-  inset: -0.1em -0.16em -0.12em;
+  inset: -0.1em -0.1em -0.12em;
   z-index: -1;
-  background: radial-gradient(circle at 30% 28%, #6BD996, #2FBF63 60%, #1FAF57);
+  /* Зерно и мелкая крапка поверх заливки: без них пятно выглядит как
+     ровный градиент из генератора, а в референсе буквы «мшистые». */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='4'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.62'/%3E%3C/svg%3E"),
+    radial-gradient(circle at 30% 28%, #6BD996, #2FBF63 60%, #1FAF57);
+  background-size: 160px 160px, 100% 100%;
+  background-blend-mode: multiply, normal;
   border-radius: 46% 54% 52% 48% / 58% 44% 56% 42%;
   box-shadow: 0 14px 30px -18px rgba(18,131,63,.9);
 }
@@ -814,6 +854,21 @@ a { color: inherit; }
 }
 @media (min-width: 760px) { .card__title { font-size: 24px; } }
 
+/* Банк — надпись над названием продукта. Внутри h3, чтобы карточка
+   называлась «Т-Банк Платиновая карта», а не просто «Платиновая карта». */
+.card__bank {
+  display: block;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--green-ink);
+  margin-bottom: 5px;
+}
+.card__name { display: block; }
+.card--paused .card__bank { color: var(--ink-soft); }
+
 .card__specs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -825,6 +880,9 @@ a { color: inherit; }
   margin-bottom: 14px;
 }
 .card__specs div { background: var(--paper-card); padding: 11px 12px; min-width: 0; }
+/* Условий может быть нечётное число — последнее тянем на всю ширину,
+   иначе в сетке остаётся пустая серая клетка. */
+.card__specs > div:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .card__specs dt {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 10px;
@@ -849,26 +907,34 @@ a { color: inherit; }
   margin-bottom: 14px;
 }
 
-.card__sources {
+/* Выплата: главное число карточки для того, кто берёт ссылку. */
+.card__pay {
   display: flex;
-  gap: 8px;
   align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--green-soft);
+  border: 1px solid #CDEFDA;
+}
+.card__pay-sum {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--green-ink);
+}
+.card__pay-for {
   font-size: 13px;
-  color: var(--muted);
-  margin-bottom: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--hair);
-}
-.card__sources b {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
   font-weight: 500;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  flex: 0 0 auto;
+  color: var(--ink-soft);
 }
-.card__sources span { color: var(--ink-soft); font-weight: 500; }
+.card--paused .card__pay {
+  background: var(--paper-pause);
+  border-color: #D9DDD5;
+}
+.card--paused .card__pay-sum { color: var(--ink-soft); }
 
 .card__actions {
   display: flex;
@@ -879,7 +945,9 @@ a { color: inherit; }
 
 /* Подпись кнопки при копировании не меняется — она и есть доступное имя.
    Успех показываем галочкой и зелёной рамкой. */
-.btn.is-done { --btn-bg: var(--green-deep); --btn-bd: var(--green-deep); }
+/* Цвет текста задаём явно: без него на кнопке-обводке остался бы тёмный
+   текст на зелёном (4,06:1). */
+.btn.is-done { --btn-bg: var(--green-deep); --btn-bd: var(--green-deep); --btn-fg: #fff; }
 .btn.is-done::before {
   content: "";
   width: 13px; height: 8px;
@@ -913,6 +981,7 @@ a { color: inherit; }
   color: var(--ink);
 }
 .manual-copy .linkish { margin-top: 9px; font-size: 13px; }
+.manual-copy__hint { margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--muted); }
 
 /* Оффер на паузе. Интерактивных элементов внутри нет вообще — вместо кнопок
    обычный текст, поэтому ничего не фокусируется и нечего «нажать вслепую». */
@@ -1092,7 +1161,9 @@ a { color: inherit; }
   font-weight: 600;
   letter-spacing: -0.01em;
 }
-.req { color: var(--green-deep); }
+/* Звёздочка «обязательное поле» — самый тёмный зелёный: --green-deep
+   на бумаге даёт 4,49:1, то есть на волосок ниже нормы. */
+.req { color: var(--green-ink); }
 
 .field input,
 .field textarea {
@@ -1225,8 +1296,10 @@ a { color: inherit; }
   letter-spacing: .06em;
   color: #A8AFA1;
 }
-.footer__meta a { color: var(--green); text-decoration: none; font-weight: 500; }
-.footer__meta a:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* Подчёркиваем сразу: в подвале ссылка стоит среди обычного текста, и
+   отличать её одним цветом нельзя. */
+.footer__meta a { color: var(--green); text-decoration: underline; text-underline-offset: 3px; font-weight: 500; }
+.footer__meta a:hover { text-decoration-thickness: 2px; }
 
 /* Переключатель параллакса — на случай, если фон в движении мешает */
 .motion-toggle {
@@ -1280,6 +1353,18 @@ a { color: inherit; }
 }
 .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 .toast:not(.is-on) { pointer-events: none; }
+
+/* На узком экране карточка одна в ряд, и нажатая кнопка «Скопировать ссылку»
+   часто оказывается ровно под тостом — то есть фокус перекрыт. Поэтому здесь
+   тост уезжает наверх, под липкую шапку. */
+@media (max-width: 759.98px) {
+  .toast {
+    top: calc(var(--header-h, 64px) + 10px);
+    bottom: auto;
+    transform: translate(-50%, -14px);
+  }
+  .toast.is-on { transform: translate(-50%, 0); }
+}
 .toast__ico { color: var(--green); display: flex; }
 
 /* --------------------------------------------------------------------------

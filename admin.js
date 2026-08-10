@@ -23,8 +23,9 @@
   }
 
   var live = $("#live"), liveAlert = $("#live-alert");
-  function say(m)   { if (live) { live.textContent = ""; setTimeout(function () { live.textContent = m; }, 60); } }
-  function shout(m) { if (liveAlert) { liveAlert.textContent = ""; setTimeout(function () { liveAlert.textContent = m; }, 60); } }
+  /* 60 мс хватало Chrome и Firefox, но VoiceOver успевает проглотить фразу. */
+  function say(m)   { if (live) { live.textContent = ""; setTimeout(function () { live.textContent = m; }, 150); } }
+  function shout(m) { if (liveAlert) { liveAlert.textContent = ""; setTimeout(function () { liveAlert.textContent = m; }, 150); } }
 
   /* ---------- Черновик ---------- */
 
@@ -122,6 +123,17 @@
     renderAll();
     ping();
     refreshPreview();
+  }
+
+  /* Экран входа перекрывает редактор картинкой, но сам по себе его не
+     выключает: без этого Tab уходит в редактор под оверлеем, а на странице
+     оказываются сразу два H1. Поэтому редактор именно скрываем. */
+  function lockApp() {
+    $("#masthead").hidden = true;
+    $("#main").hidden = true;
+    gate.hidden = false;
+    var p = $("#gate-pass");
+    if (p) { p.value = ""; p.focus(); }
   }
 
   function gateError(msg) {
@@ -266,7 +278,10 @@
       var tr = el("tr");
       tr.dataset.id = c.id;
 
-      var td1 = el("td");
+      // Первая ячейка — заголовок строки: так вслух читается «Кредитные
+      // карты, офферов 5», а не голые числа без привязки.
+      var td1 = el("th");
+      td1.setAttribute("scope", "row");
       td1.appendChild(el("b", "cell-title", c.label));
       if (isAll) td1.appendChild(el("span", "cell-sub", "общий фильтр"));
       tr.appendChild(td1);
@@ -285,8 +300,15 @@
       if (i === 0 || i === list.length - 1) dn.setAttribute("aria-disabled", "true");
       if (isAll) { up.setAttribute("aria-disabled", "true"); dn.setAttribute("aria-disabled", "true"); }
 
-      up.addEventListener("click", function () { moveCat(c.id, -1); });
-      dn.addEventListener("click", function () { moveCat(c.id, 1); });
+      var catGuard = function (btn, dir) {
+        return function () {
+          if (btn.getAttribute("aria-disabled") !== "true") { moveCat(c.id, dir); return; }
+          if (isAll) say("Категория «Все» всегда стоит первой — её порядок не меняется.");
+          else say("«" + c.label + "» уже " + (dir < 0 ? "первая" : "последняя") + " в списке.");
+        };
+      };
+      up.addEventListener("click", catGuard(up, -1));
+      dn.addEventListener("click", catGuard(dn, 1));
       acts.appendChild(up); acts.appendChild(dn);
 
       if (!isAll) {
@@ -456,7 +478,9 @@
   function visibleOffers() {
     if (!query) return DATA.offers.slice();
     return DATA.offers.filter(function (o) {
-      return [o.title, o.geo, o.sources, o.model, o.payout].join(" ").toLowerCase().indexOf(query) >= 0;
+      var hay = [o.title, o.bank, o.payout, o.payFor, o.note, o.badge];
+      if (Array.isArray(o.facts)) o.facts.forEach(function (f) { if (f) hay.push(f.k, f.v); });
+      return hay.join(" ").toLowerCase().indexOf(query) >= 0;
     });
   }
 
@@ -475,12 +499,13 @@
       var tr = el("tr");
       tr.dataset.id = o.id;
 
-      var td1 = el("td");
+      var td1 = el("th");
+      td1.setAttribute("scope", "row");
       td1.appendChild(el("b", "cell-title", o.title || "Без названия"));
       td1.appendChild(el("span", "cell-sub", catLabel(o.cat)));
       tr.appendChild(td1);
 
-      tr.appendChild(el("td", null, o.geo || "—"));
+      tr.appendChild(el("td", null, o.bank || "—"));
       tr.appendChild(el("td", null, o.payout || "—"));
 
       var td4 = el("td");
@@ -496,10 +521,26 @@
       var dn = iconBtn("Опустить оффер «" + o.title + "»", "↓");
       up.dataset.act = "up"; up.dataset.id = o.id;
       dn.dataset.act = "down"; dn.dataset.id = o.id;
+      /* При включённом поиске в таблице видна только часть офферов, а порядок
+         меняется в полном списке — стрелка меняла бы оффер местами с тем,
+         кого на экране нет. Поэтому пока идёт поиск, порядок не трогаем. */
+      if (query) { up.setAttribute("aria-disabled", "true"); dn.setAttribute("aria-disabled", "true"); }
       if (i === 0) up.setAttribute("aria-disabled", "true");
       if (i === total - 1) dn.setAttribute("aria-disabled", "true");
-      up.addEventListener("click", function () { moveOffer(o.id, -1); });
-      dn.addEventListener("click", function () { moveOffer(o.id, 1); });
+      /* aria-disabled сам ничего не запрещает — отказ проверяем руками и
+         говорим причину, иначе нажатие просто ничего не делает. */
+      var guard = function (btn, dir) {
+        return function () {
+          if (btn.getAttribute("aria-disabled") !== "true") { moveOffer(o.id, dir); return; }
+          if (query) {
+            say("Пока включён поиск, порядок менять нельзя — очисти поиск и попробуй снова.");
+          } else {
+            say("«" + o.title + "» уже " + (dir < 0 ? "первый" : "последний") + " в списке.");
+          }
+        };
+      };
+      up.addEventListener("click", guard(up, -1));
+      dn.addEventListener("click", guard(dn, 1));
       acts.appendChild(up); acts.appendChild(dn);
 
       var tg = iconBtn((on ? "Поставить на паузу оффер «" : "Вернуть в работу оффер «") + o.title + "»", on ? "⏸" : "▶");
@@ -580,6 +621,158 @@
   }
   $("#o-active").addEventListener("change", setActiveState);
 
+  /* ---------- Условия продукта ----------
+     У карты, займа и счёта условия разные, поэтому список пар задаётся
+     руками. Каждая строка — два поля с настоящими подписями (label), иначе
+     в скринридере получится «поле ввода, поле ввода, поле ввода». */
+
+  var factsBox = $("#o-facts");
+  var FACTS_MAX = 6;
+  var factSeq = 0;
+
+  function factRow(k, v) {
+    var i = ++factSeq;
+    var row = el("div", "facts__row");
+
+    var kf = el("div", "facts__cell");
+    var kid = "o-fact-k-" + i;
+    var kl = el("label", "facts__lab", "Условие");
+    kl.setAttribute("for", kid);
+    var ki = el("input");
+    ki.type = "text"; ki.id = kid; ki.className = "fact-k";
+    ki.autocomplete = "off";
+    ki.placeholder = "Без процентов";
+    ki.value = k || "";
+    kf.appendChild(kl); kf.appendChild(ki);
+
+    var vf = el("div", "facts__cell");
+    var vid = "o-fact-v-" + i;
+    var vl = el("label", "facts__lab", "Значение");
+    vl.setAttribute("for", vid);
+    var vi = el("input");
+    vi.type = "text"; vi.id = vid; vi.className = "fact-v";
+    vi.autocomplete = "off";
+    vi.placeholder = "120 дней";
+    vi.value = v || "";
+    vf.appendChild(vl); vf.appendChild(vi);
+
+    var rm = el("button", "iconbtn iconbtn--danger facts__del", "✕");
+    rm.type = "button";
+    rm.appendChild(el("span", "vh", " Удалить условие"));
+    rm.addEventListener("click", function () { removeFact(row); });
+
+    row.appendChild(kf); row.appendChild(vf); row.appendChild(rm);
+    return row;
+  }
+
+  function factRows() { return $$(".facts__row", factsBox); }
+
+  /* Строки нумеруются подписями «Условие 2», иначе в списке полей формы
+     будет шесть одинаковых «Условие» без понимания, какое из них какое. */
+  function renumberFacts() {
+    var rows = factRows();
+    rows.forEach(function (row, idx) {
+      var n = idx + 1;
+      var labs = $$(".facts__lab", row);
+      if (labs[0]) labs[0].textContent = "Условие " + n;
+      if (labs[1]) labs[1].textContent = "Значение " + n;
+      var rm = $(".facts__del", row);
+      var k = ($(".fact-k", row) || {}).value;
+      if (rm) $(".vh", rm).textContent = " Удалить условие " + n + (k ? " «" + k + "»" : "");
+    });
+    var add = $("#o-facts-add");
+    if (add) {
+      // aria-disabled, а не disabled: выключенная кнопка выпадает из обхода
+      // клавиатурой, и объяснить, почему больше нельзя, уже нечем.
+      var full = rows.length >= FACTS_MAX;
+      if (full) add.setAttribute("aria-disabled", "true");
+      else add.removeAttribute("aria-disabled");
+    }
+    var cnt = $("#o-facts-count");
+    if (cnt) cnt.textContent = "Условий: " + rows.length + " из " + FACTS_MAX;
+  }
+
+  function removeFact(row) {
+    var rows = factRows();
+    var idx = rows.indexOf(row);
+    row.remove();
+    renumberFacts();
+    var left = factRows();
+    // Фокус не должен улететь в начало формы: уходим на соседнюю строку.
+    var next = left[Math.min(idx, left.length - 1)];
+    if (next) $(".fact-k", next).focus();
+    else $("#o-facts-add").focus();
+    say("Условие удалено. Осталось " + left.length + " " + plural(left.length, "условие", "условия", "условий"));
+  }
+
+  function addFact(k, v, focus) {
+    if (factRows().length >= FACTS_MAX) return null;
+    var row = factRow(k, v);
+    factsBox.appendChild(row);
+    renumberFacts();
+    if (focus) {
+      // Ничего не объявляем: фокус переезжает в поле с подписью
+      // «Условие N», и она сама себя прочитает. Иначе фразы наложатся.
+      $(".fact-k", row).focus();
+    }
+    return row;
+  }
+
+  function fillFacts(offer) {
+    factsBox.textContent = "";
+    var list = offer && Array.isArray(offer.facts) ? offer.facts : null;
+    // Каталог прежней версии: показатели лежали отдельными полями.
+    if (!list && offer) {
+      list = [];
+      [["ГЕО", offer.geo], ["Модель", offer.model], ["Холд", offer.hold], ["Источники", offer.sources]]
+        .forEach(function (p) { if (p[1]) list.push({ k: p[0], v: p[1] }); });
+    }
+    if (!list || !list.length) list = [{ k: "", v: "" }, { k: "", v: "" }];
+    list.slice(0, FACTS_MAX).forEach(function (f) { addFact(f && f.k, f && f.v, false); });
+    renumberFacts();
+  }
+
+  function collectFacts() {
+    var out = [];
+    factRows().forEach(function (row) {
+      var k = $(".fact-k", row).value.trim();
+      var v = $(".fact-v", row).value.trim();
+      if (k && v) out.push({ k: k, v: v });
+    });
+    return out;
+  }
+
+  /* Заполнена половина строки — молча выбрасывать её нельзя: человек думает,
+     что условие сохранилось. Возвращаем список проблем для сводки ошибок. */
+  function factErrors() {
+    var errs = [];
+    factRows().forEach(function (row, idx) {
+      var ki = $(".fact-k", row), vi = $(".fact-v", row);
+      var k = ki.value.trim(), v = vi.value.trim();
+      ki.removeAttribute("aria-invalid");
+      vi.removeAttribute("aria-invalid");
+      if (k && !v) {
+        vi.setAttribute("aria-invalid", "true");
+        errs.push([vi.id, "У условия «" + k + "» не заполнено значение"]);
+      } else if (!k && v) {
+        ki.setAttribute("aria-invalid", "true");
+        errs.push([ki.id, "У значения «" + v + "» не заполнено условие"]);
+      }
+    });
+    return errs;
+  }
+
+  $("#o-facts-add").addEventListener("click", function () {
+    if ($("#o-facts-add").getAttribute("aria-disabled") === "true") {
+      say("Больше " + FACTS_MAX + " условий в карточку не поместится. Удали лишнее условие, чтобы добавить новое.");
+      return;
+    }
+    addFact("", "", true);
+  });
+  factsBox.addEventListener("input", function (e) {
+    if (e.target.classList.contains("fact-k")) renumberFacts();
+  });
+
   function openOfferDialog(offer) {
     editing = offer || null;
     offerOpener = document.activeElement;
@@ -587,15 +780,14 @@
 
     $("#offer-dlg-h").textContent = offer ? "Изменить оффер" : "Новый оффер";
     $("#o-title").value   = offer ? (offer.title || "") : "";
+    $("#o-bank").value    = offer ? (offer.bank || "") : "";
     $("#o-cat").value     = offer ? (offer.cat || "") : ($("#o-cat").options[0] ? $("#o-cat").options[0].value : "");
-    $("#o-geo").value     = offer ? (offer.geo || "") : "";
     $("#o-payout").value  = offer ? (offer.payout || "") : "";
-    $("#o-model").value   = offer ? (offer.model || "") : "";
-    $("#o-hold").value    = offer ? (offer.hold || "") : "";
+    $("#o-payfor").value  = offer ? (offer.payFor || "") : "";
     $("#o-badge").value   = offer ? (offer.badge || "") : "";
     $("#o-url").value     = offer ? (offer.url || "") : "";
-    $("#o-sources").value = offer ? (offer.sources || "") : "";
     $("#o-note").value    = offer ? (offer.note || "") : "";
+    fillFacts(offer);
     $("#o-active").checked = offer ? offer.active !== false : true;
     setActiveState();
 
@@ -610,7 +802,26 @@
   $("#offer-add").addEventListener("click", function () { openOfferDialog(null); });
   $("#offer-cancel").addEventListener("click", function () { offerDlg.close(); });
 
+  /* Куда вернуть фокус после закрытия, решаем в одном месте. Событие close
+     приходит отдельной задачей, уже после кода, который вызвал close(): если
+     возвращать фокус прямо там, обработчик close всё равно перебьёт его — и
+     после сохранения оффера фокус улетал на «Добавить оффер».
+     Вызываем и там, и сразу после close(): в некоторых встроенных браузерах
+     (например, в панели предпросмотра) событие close вообще не приходит,
+     и тогда фокус остался бы в закрытом диалоге. Повторный вызов безвреден. */
+  var pendingFocus = null;
+
+  function applyPendingFocus() {
+    var sel = pendingFocus;
+    pendingFocus = null;
+    if (sel && document.querySelector(sel)) { refocus(sel); return; }
+    if (sel === null) return; // фокус уже возвращён
+    if (offerOpener && offerOpener.isConnected) offerOpener.focus();
+    else refocus("#offer-add");
+  }
+
   offerDlg.addEventListener("close", function () {
+    if (pendingFocus) { applyPendingFocus(); return; }
     if (offerOpener && offerOpener.isConnected) offerOpener.focus();
     else refocus("#offer-add");
   });
@@ -632,7 +843,7 @@
     var url = $("#o-url").value.trim();
 
     if (!title) {
-      fieldErr("#o-title", "Без названия карточку не подписать. Например: 1Win Casino.");
+      fieldErr("#o-title", "Без названия карточку не подписать. Например: Платиновая карта.");
       errs.push(["o-title", "Название оффера не заполнено"]);
     }
     if (!url) {
@@ -643,8 +854,13 @@
       errs.push(["o-url", "Ссылка указана не полностью"]);
     }
 
+    errs = errs.concat(factErrors());
+
     var box = $("#offer-errs"), list = $("#offer-err-list");
     if (errs.length) {
+      $("#offer-errs h3").textContent = errs.length === 1
+        ? "В форме одна ошибка"
+        : "В форме " + errs.length + " " + plural(errs.length, "ошибка", "ошибки", "ошибок");
       list.textContent = "";
       errs.forEach(function (pair) {
         var li = el("li"), a = el("a", null, pair[1]);
@@ -660,20 +876,23 @@
     box.hidden = true;
 
     var data = {
-      title:   title,
-      cat:     $("#o-cat").value,
-      geo:     $("#o-geo").value.trim(),
-      payout:  $("#o-payout").value.trim(),
-      model:   $("#o-model").value.trim(),
-      hold:    $("#o-hold").value.trim(),
-      badge:   $("#o-badge").value.trim(),
-      url:     url,
-      sources: $("#o-sources").value.trim(),
-      note:    $("#o-note").value.trim(),
-      active:  $("#o-active").checked
+      title:  title,
+      cat:    $("#o-cat").value,
+      bank:   $("#o-bank").value.trim(),
+      payout: $("#o-payout").value.trim(),
+      payFor: $("#o-payfor").value.trim(),
+      facts:  collectFacts(),
+      badge:  $("#o-badge").value.trim(),
+      url:    url,
+      note:   $("#o-note").value.trim(),
+      active: $("#o-active").checked
     };
 
     if (editing) {
+      // Поля прежней версии (ГЕО, модель, холд, источники) переехали в
+      // «условия», поэтому при сохранении убираем их, чтобы они не тянулись
+      // в опубликованный data.js.
+      ["geo", "model", "hold", "sources"].forEach(function (k) { delete editing[k]; });
       Object.keys(data).forEach(function (k) { editing[k] = data[k]; });
       say("Оффер «" + title + "» изменён");
     } else {
@@ -685,8 +904,10 @@
     persist();
     renderOffers();
     var id = editing ? editing.id : data.id;
+    // Назначаем цель ДО close(), чтобы обработчик close не перебил её своей.
+    pendingFocus = '[data-act="edit"][data-id="' + cssEsc(id) + '"]';
     offerDlg.close();
-    refocus('[data-act="edit"][data-id="' + cssEsc(id) + '"]');
+    applyPendingFocus();
   });
 
   /* Удаление оффера */
@@ -775,8 +996,7 @@
           pubStatus("Сессия истекла. Введи пароль ещё раз — черновик сохранён, публикацию повторим.", "bad");
           token = "";
           try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* ок */ }
-          gate.hidden = false;
-          $("#gate-pass").focus();
+          lockApp();
         } else {
           throw new Error((res && res.error) || "не вышло");
         }

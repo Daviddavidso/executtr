@@ -25,7 +25,16 @@
   function say(msg) {
     if (!live) return;
     live.textContent = "";
-    setTimeout(function () { live.textContent = msg; }, 60);
+    // 60 мс хватало Chrome и Firefox, но VoiceOver успевает проглотить фразу.
+    setTimeout(function () { live.textContent = msg; }, 150);
+  }
+
+  /* Только для настоящих сбоев: перебивает то, что читается сейчас. */
+  var liveAlert = $("#live-alert");
+  function shout(msg) {
+    if (!liveAlert) return;
+    liveAlert.textContent = "";
+    setTimeout(function () { liveAlert.textContent = msg; }, 150);
   }
 
   function el(tag, cls, text) {
@@ -79,12 +88,10 @@
   function applyStats() {
     var active = OFFERS.filter(function (o) { return o.active !== false; });
 
-    var geo = {};
+    var banks = {};
     active.forEach(function (o) {
-      String(o.geo || "").split(/[,/]/).forEach(function (g) {
-        g = g.trim();
-        if (g) geo[g.toUpperCase()] = 1;
-      });
+      var b = String(o.bank || "").trim();
+      if (b) banks[b.toLowerCase()] = 1;
     });
 
     var cats = {};
@@ -92,7 +99,7 @@
 
     var set = function (id, v) { var n = $(id); if (n) n.textContent = v; };
     set("#stat-active", String(active.length));
-    set("#stat-geo", String(Object.keys(geo).length));
+    set("#stat-banks", String(Object.keys(banks).length));
     set("#stat-cats", String(Object.keys(cats).length));
   }
 
@@ -105,12 +112,10 @@
     var words = [];
     CATS.forEach(function (c) { if (c.id !== "all" && c.label) words.push(c.label); });
     OFFERS.filter(function (o) { return o.active !== false; }).forEach(function (o) {
-      String(o.geo || "").split(/[,/]/).forEach(function (g) {
-        g = g.trim().toUpperCase();
-        if (g && words.indexOf(g) < 0) words.push(g);
-      });
+      var b = String(o.bank || "").trim();
+      if (b && words.indexOf(b) < 0) words.push(b);
     });
-    if (!words.length) words = ["Офферы", "ГЕО", "Выплаты"];
+    if (!words.length) words = ["Офферы", "Банки", "Выплаты"];
 
     // Лента крутится на -50%, поэтому содержимое дублируется ровно дважды.
     var half = document.createDocumentFragment();
@@ -133,12 +138,33 @@
     return "";
   }
 
+  /* Список пар «условие — значение». Раньше показатели были жёсткими
+     (ГЕО, ставка, холд), но у карты, займа и счёта условия разные, поэтому
+     теперь их задаёт админка. Старые поля тоже понимаем — на случай
+     каталога, опубликованного прежней версией. */
+  function factsOf(o) {
+    var out = [];
+    if (Array.isArray(o.facts)) {
+      o.facts.forEach(function (f) {
+        if (!f) return;
+        var k = String(f.k == null ? "" : f.k).trim();
+        var v = String(f.v == null ? "" : f.v).trim();
+        if (k && v) out.push({ k: k, v: v });
+      });
+    }
+    if (!out.length) {
+      [["ГЕО", o.geo], ["Модель", o.model], ["Холд", o.hold], ["Источники", o.sources]]
+        .forEach(function (p) { if (p[1]) out.push({ k: p[0], v: String(p[1]) }); });
+    }
+    return out;
+  }
+
   function matches(o) {
     if (state.cat !== "all" && o.cat !== state.cat) return false;
     if (!state.q) return true;
-    var hay = [o.title, o.geo, o.sources, o.model, o.note, o.badge, catLabel(o.cat)]
-      .join(" ").toLowerCase();
-    return hay.indexOf(state.q) >= 0;
+    var hay = [o.title, o.bank, o.payout, o.payFor, o.note, o.badge, catLabel(o.cat)];
+    factsOf(o).forEach(function (f) { hay.push(f.k, f.v); });
+    return hay.join(" ").toLowerCase().indexOf(state.q) >= 0;
   }
 
   function buildFilters() {
@@ -160,21 +186,41 @@
       var badge = el("span", "chip__n mono", String(n));
       badge.setAttribute("aria-hidden", "true");
       b.appendChild(badge);
-      // Для скринридера счётчик проговариваем словами, а не «Gambling 4».
+      // Для скринридера счётчик проговариваем словами, а не «Кредитки 5».
       b.appendChild(el("span", "vh", ", " + n + " " + plural(n, "оффер", "оффера", "офферов")));
 
       b.addEventListener("click", function () {
         state.cat = c.id;
         syncFilters();
-        render(true);
+        render(true, b);
       });
       filtersBox.appendChild(b);
     });
   }
 
+  /* Счётчик на фильтре считаем с учётом поиска: иначе на кнопке «5», а в
+     каталоге «Найден 1 оффер» — цифры спорят друг с другом. */
+  function catCount(id) {
+    return OFFERS.filter(function (o) {
+      if (id !== "all" && o.cat !== id) return false;
+      if (!state.q) return true;
+      var was = state.cat, ok;
+      state.cat = "all";
+      ok = matches(o);
+      state.cat = was;
+      return ok;
+    }).length;
+  }
+
   function syncFilters() {
     $$(".chip", filtersBox).forEach(function (b) {
       b.setAttribute("aria-pressed", String(b.dataset.cat === state.cat));
+
+      var n = catCount(b.dataset.cat);
+      var badge = $(".chip__n", b);
+      if (badge) badge.textContent = String(n);
+      var vh = $(".vh", b);
+      if (vh) vh.textContent = ", " + n + " " + plural(n, "оффер", "оффера", "офферов");
     });
   }
 
@@ -200,22 +246,33 @@
     return s;
   }
 
+  /* «Т-Банк — Платиновая карта»: и в тостах, и в подписях для скринридера
+     оффер должен называться так же, как он подписан на карточке. */
+  function offerName(o) {
+    var t = String(o.title || "Без названия").trim();
+    var b = String(o.bank || "").trim();
+    return b ? b + " — " + t : t;
+  }
+
   function buildCard(o) {
     var paused = o.active === false;
 
-    var uid = "of-" + (o.id || Math.random().toString(36).slice(2));
+    // Ключ должен быть один и тот же при каждой перерисовке — на нём держатся
+    // и aria-labelledby, и возврат фокуса. Случайное число тут ломало бы оба.
+    var uid = "of-" + (o.id || "i" + OFFERS.indexOf(o));
 
     var li = el("li");
+    li.dataset.offer = uid;
     var card = el("article", "card" + (paused ? " card--paused" : ""));
     card.setAttribute("aria-labelledby", uid + "-t");
     li.appendChild(card);
 
-    /* Верх: вертикаль, метка, статус */
+    /* Верх: категория, метка, статус */
     var top = el("div", "card__top");
     var cl = catLabel(o.cat);
     if (cl) {
       var ct = el("span", "tag tag--cat");
-      ct.appendChild(el("span", "vh", "Вертикаль: "));
+      ct.appendChild(el("span", "vh", "Категория: "));
       ct.appendChild(document.createTextNode(cl));
       top.appendChild(ct);
     }
@@ -225,46 +282,58 @@
       pt.id = uid + "-state";
       pt.appendChild(el("span", "vh", "Статус: "));
       pt.appendChild(document.createTextNode("На паузе"));
-      pt.appendChild(el("span", "vh", " — ссылку сейчас забрать нельзя"));
       top.appendChild(pt);
-      card.setAttribute("aria-describedby", uid + "-state");
+      /* Статус попадает в само имя карточки: описание у article
+         скринридеры в режиме чтения обычно пропускают, и «на паузе»
+         тогда узнаёшь только по серому цвету. Причину даёт строка с замком. */
+      card.setAttribute("aria-labelledby", uid + "-t " + uid + "-state");
+      card.setAttribute("aria-describedby", uid + "-why");
     }
     card.appendChild(top);
 
-    /* Заголовок */
-    var h = el("h3", "card__title", o.title || "Без названия");
+    /* Заголовок: банк отдельной строкой, но внутри доступного имени
+       карточки — иначе в списке кнопок будет пять «Скопировать ссылку». */
+    var h = el("h3", "card__title");
     h.id = uid + "-t";
+    if (o.bank) {
+      h.appendChild(el("span", "card__bank mono", o.bank));
+      // Пробел между строками нужен вслух: без него имя карточки
+      // склеивается в «Т-БанкПлатиновая карта». Визуально он схлопывается.
+      h.appendChild(document.createTextNode(" "));
+    }
+    h.appendChild(el("span", "card__name", o.title || "Без названия"));
     card.appendChild(h);
 
-    /* Показатели */
+    /* Условия продукта */
     var dl = el("dl", "card__specs");
-    spec(dl, "ГЕО", o.geo);
-    spec(dl, "Ставка", o.payout, !paused);
-    spec(dl, "Модель", o.model);
-    spec(dl, "Холд", o.hold);
+    factsOf(o).forEach(function (f) { spec(dl, f.k, f.v); });
     if (dl.children.length) card.appendChild(dl);
 
-    if (o.note) card.appendChild(el("p", "card__note", o.note));
-
-    if (o.sources) {
-      var src = el("div", "card__sources");
-      src.appendChild(el("b", null, "Источники"));
-      src.appendChild(el("span", null, o.sources));
-      card.appendChild(src);
+    /* Выплата агенту */
+    if (o.payout) {
+      var pay = el("div", "card__pay" + (paused ? "" : " is-live"));
+      pay.appendChild(el("span", "vh", "Выплата: "));
+      pay.appendChild(el("b", "card__pay-sum", o.payout));
+      pay.appendChild(el("span", "card__pay-for", o.payFor || "за подтверждённую заявку"));
+      card.appendChild(pay);
     }
+
+    if (o.note) card.appendChild(el("p", "card__note", o.note));
 
     /* Действия */
     if (paused) {
       var lock = el("div", "card__locked");
+      lock.id = uid + "-why";
       lock.appendChild(lockIcon());
-      lock.appendChild(el("span", null, "Оффер на паузе — ссылка недоступна"));
+      lock.appendChild(el("span", null, "Оффер на паузе — ссылку забрать нельзя"));
       card.appendChild(lock);
     } else {
       var act = el("div", "card__actions");
 
-      var copy = el("button", "btn btn--ink", "Забрать ссылку");
+      var copy = el("button", "btn btn--ink", "Скопировать ссылку");
       copy.type = "button";
-      copy.appendChild(el("span", "vh", " на оффер " + (o.title || "")));
+      copy.dataset.act = "copy";
+      copy.appendChild(el("span", "vh", " на оффер " + offerName(o)));
       copy.addEventListener("click", function () { copyLink(o, copy); });
       act.appendChild(copy);
 
@@ -272,8 +341,11 @@
         var go = el("a", "btn btn--line", "Перейти");
         go.href = o.url;
         go.target = "_blank";
-        go.rel = "noopener nofollow";
-        go.appendChild(el("span", "vh", " на оффер " + (o.title || "") + " (откроется в новой вкладке)"));
+        go.dataset.act = "go";
+        // sponsored — для партнёрских ссылок. noreferrer не ставим:
+        // без Referer партнёрка может не привязать переход.
+        go.rel = "noopener nofollow sponsored";
+        go.appendChild(el("span", "vh", " на страницу оффера " + offerName(o) + " (откроется в новой вкладке)"));
         act.appendChild(go);
       }
       card.appendChild(act);
@@ -282,9 +354,49 @@
     return li;
   }
 
-  function render(announce) {
+  /* Карточки перерисовываются целиком, поэтому перед этим запоминаем, на
+     какой кнопке какого оффера стоял фокус, и возвращаем его на место. Иначе
+     тот, кто дошёл до карточек с клавиатуры и в это время сработал поиск,
+     оказывается в самом начале страницы. */
+  function focusMemo() {
+    var a = document.activeElement;
+    if (!a || !cardsBox.contains(a)) return null;
+    var li = a.closest("li[data-offer]");
+    return li ? { offer: li.dataset.offer, act: a.dataset.act || "copy" } : null;
+  }
+
+  function restoreFocus(memo, trigger) {
+    if (!memo) return;
+    var li = cardsBox.querySelector('li[data-offer="' + cssEsc(memo.offer) + '"]');
+    var target = li && (li.querySelector('[data-act="' + memo.act + '"]') || li.querySelector("[data-act]"));
+    // Оффер выпал из выборки — уводим фокус туда, откуда пришло действие,
+    // а не оставляем его на удалённом узле (это равно потере фокуса).
+    if (!target) {
+      target = (trigger && trigger.isConnected && trigger) ||
+               cardsBox.querySelector('[data-act="' + memo.act + '"]') ||
+               cardsBox.querySelector("[data-act]") ||
+               qInput || headingAnchor();
+    }
+    if (target) try { target.focus({ preventScroll: true }); } catch (e) { target.focus(); }
+  }
+
+  function headingAnchor() {
+    var h = $("#catalog-h");
+    if (h && !h.hasAttribute("tabindex")) h.setAttribute("tabindex", "-1");
+    return h;
+  }
+
+  function cssEsc(s) {
+    return window.CSS && CSS.escape ? CSS.escape(s) : String(s).replace(/"/g, '\\"');
+  }
+
+  function render(announce, trigger) {
     if (!cardsBox) return;
+    // Цифры на фильтрах пересчитываем здесь же: иначе при поиске на кнопке
+    // остаётся «5», а в каталоге уже «3 оффера».
+    syncFilters();
     var list = OFFERS.filter(matches);
+    var memo = focusMemo();
 
     cardsBox.textContent = "";
     var frag = document.createDocumentFragment();
@@ -294,12 +406,19 @@
     var paused = list.filter(function (o) { return o.active === false; }).length;
     var txt = list.length + " " + plural(list.length, "оффер", "оффера", "офферов");
     if (paused) txt += " · " + paused + " на паузе";
+    // Вслух — словами: точку-разделитель скринридеры читают как «точка».
+    var said = list.length
+      ? txt.replace(" · " + paused + " на паузе", ", из них " + paused + " на паузе")
+      : "Ничего не найдено. Сбрось фильтр или измени запрос.";
     if (countBox) countBox.textContent = list.length ? txt : "Ничего не найдено";
 
     if (emptyBox) emptyBox.hidden = list.length > 0;
-    if (cardsBox) cardsBox.hidden = list.length === 0;
 
-    if (announce) say(list.length ? txt : "Ничего не найдено");
+    restoreFocus(memo, trigger);
+
+    /* Озвучиваем только через #live: если счётчик сделать живой областью,
+       та же фраза прочитается дважды — он ещё и описание поля поиска. */
+    if (announce) say(said);
   }
 
   /* ---------- Копирование ссылки ---------- */
@@ -339,8 +458,8 @@
     if (ok) {
       btn.classList.add("is-done");
       setTimeout(function () { btn.classList.remove("is-done"); }, 2200);
-      showToast("Ссылка на «" + o.title + "» скопирована");
-      say("Ссылка на оффер " + o.title + " скопирована в буфер обмена");
+      showToast("Ссылка на «" + offerName(o) + "» скопирована");
+      say("Ссылка на оффер " + offerName(o) + " скопирована в буфер обмена. Отправляй её клиенту как есть, не сокращай.");
     } else {
       showManualCopy(o, btn);
     }
@@ -351,25 +470,43 @@
      ссылкой и переводим в него фокус — само перемещение и есть сообщение. */
   function showManualCopy(o, btn) {
     var card = btn.closest(".card");
-    if (!card) { window.open(o.url, "_blank", "noopener"); return; }
+    // Кнопка вне карточки — открывать ссылку вместо копирования нельзя:
+    // человек нажал «скопировать», а не «перейти». Просто говорим, что делать.
+    if (!card) {
+      shout("Скопировать не удалось: браузер не дал доступ к буферу обмена. " +
+            "Открой оффер кнопкой «Перейти» и скопируй адрес из строки браузера.");
+      return;
+    }
 
     var old = card.querySelector(".manual-copy");
     if (old) old.remove();
 
     var box = el("div", "manual-copy");
-    var lab = el("label", null, "Скопируй ссылку вручную");
     var id = "mc-" + (o.id || Math.random().toString(36).slice(2));
+
+    /* Неудачу пишем в саму подпись поля: фокус переезжает в поле, и подпись —
+       единственное, что человек в этот момент услышит. */
+    var lab = el("label", null, "Не скопировалось — забери ссылку вручную");
     lab.setAttribute("for", id);
+
+    var hint = el("p", "manual-copy__hint", "Браузер не дал доступ к буферу обмена. " +
+      "Ссылка уже выделена — нажми Ctrl+C, на Mac Command+C.");
+    hint.id = id + "-hint";
 
     var inp = document.createElement("input");
     inp.type = "text"; inp.id = id; inp.readOnly = true; inp.value = o.url;
     inp.setAttribute("spellcheck", "false");
+    inp.setAttribute("aria-describedby", hint.id);
 
     var close = el("button", "linkish", "Скрыть");
     close.type = "button";
-    close.addEventListener("click", function () { box.remove(); btn.focus(); });
+    close.appendChild(el("span", "vh", " поле со ссылкой на оффер " + offerName(o)));
+    close.addEventListener("click", function () {
+      box.remove();
+      if (btn.isConnected) btn.focus(); else headingAnchor().focus();
+    });
 
-    box.appendChild(lab); box.appendChild(inp); box.appendChild(close);
+    box.appendChild(lab); box.appendChild(inp); box.appendChild(hint); box.appendChild(close);
     card.appendChild(box);
 
     inp.focus();
@@ -377,7 +514,11 @@
   }
 
   function copyLink(o, btn) {
-    if (!o.url) { showToast("У оффера пока нет ссылки"); say("У оффера пока нет ссылки"); return; }
+    if (!o.url) {
+      showToast("У оффера «" + offerName(o) + "» пока нет ссылки");
+      say("У оффера " + offerName(o) + " пока нет ссылки. Добавь её в панели управления.");
+      return;
+    }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(o.url)
         .then(function () { afterCopy(true, o, btn); })
@@ -411,9 +552,12 @@
       state.cat = "all"; state.q = "";
       if (qInput) qInput.value = "";
       syncFilters();
-      render(true);
-      var first = $(".chip", filtersBox);
-      if (first) first.focus();
+      /* Фокус уводим ДО перерисовки: кнопка живёт внутри блока «ничего не
+         нашлось», который сейчас скроется вместе с ней. */
+      var dest = $(".chip", filtersBox) || qInput || headingAnchor();
+      if (dest) dest.focus();
+      render(false, dest);
+      say("Фильтр сброшен. " + OFFERS.length + " " + plural(OFFERS.length, "оффер", "оффера", "офферов") + ".");
     });
   }
 

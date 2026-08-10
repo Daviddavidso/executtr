@@ -8,8 +8,8 @@
 <meta name="theme-color" content="#F6F7F4">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%230A0C0A'/><path d='M11 9h11M11 16h8M11 23h11' stroke='%232FBF63' stroke-width='3' stroke-linecap='round'/></svg>">
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="styles.css?v=3">
-<link rel="stylesheet" href="admin.css?v=3">
+<link rel="stylesheet" href="styles.css?v=10">
+<link rel="stylesheet" href="admin.css?v=10">
 </head>
 <body class="admin-body">
 
@@ -154,7 +154,7 @@
       <div class="admin-tools">
         <div class="field field--search">
           <label class="vh" for="admin-q">Поиск по офферам</label>
-          <input id="admin-q" type="search" placeholder="Название, ГЕО, источник" autocomplete="off">
+          <input id="admin-q" type="search" placeholder="Название, банк, условие" autocomplete="off">
         </div>
         <p class="admin-count mono" id="admin-count" role="status" aria-live="polite" aria-atomic="true"></p>
       </div>
@@ -165,8 +165,8 @@
           <thead>
             <tr>
               <th scope="col">Оффер</th>
-              <th scope="col">ГЕО</th>
-              <th scope="col">Ставка</th>
+              <th scope="col">Банк</th>
+              <th scope="col">Выплата</th>
               <th scope="col">Статус</th>
               <th scope="col"><span class="vh">Действия</span></th>
             </tr>
@@ -223,58 +223,59 @@
 
     <form id="offer-form" novalidate>
       <div class="field-grid">
-        <div class="field field--full">
-          <label for="o-title">Название оффера <span class="req" aria-hidden="true">*</span></label>
-          <input id="o-title" type="text" required aria-required="true" autocomplete="off" placeholder="1Win Casino" aria-describedby="o-title-err">
+        <div class="field">
+          <label for="o-title">Название продукта <span class="req" aria-hidden="true">*</span></label>
+          <input id="o-title" type="text" required aria-required="true" autocomplete="off" placeholder="Платиновая карта" aria-describedby="o-title-err">
           <p class="err" id="o-title-err" hidden></p>
         </div>
 
         <div class="field">
-          <label for="o-cat">Вертикаль <span class="req" aria-hidden="true">*</span></label>
+          <label for="o-bank">Банк или партнёр</label>
+          <input id="o-bank" type="text" autocomplete="off" placeholder="Т-Банк" aria-describedby="o-bank-hint">
+          <p class="hint" id="o-bank-hint">Показывается над названием. Отсюда считается счётчик банков на витрине.</p>
+        </div>
+
+        <div class="field">
+          <label for="o-cat">Категория <span class="req" aria-hidden="true">*</span></label>
           <select id="o-cat" required aria-required="true"></select>
         </div>
 
         <div class="field">
-          <label for="o-geo">ГЕО</label>
-          <input id="o-geo" type="text" autocomplete="off" placeholder="US, CA, AU" aria-describedby="o-geo-hint">
-          <p class="hint" id="o-geo-hint">Через запятую. Отсюда считается счётчик ГЕО на витрине.</p>
-        </div>
-
-        <div class="field">
-          <label for="o-payout">Ставка</label>
-          <input id="o-payout" type="text" autocomplete="off" placeholder="45 $">
-        </div>
-
-        <div class="field">
-          <label for="o-model">Модель</label>
-          <input id="o-model" type="text" autocomplete="off" placeholder="CPA, RevShare, SOI…">
-        </div>
-
-        <div class="field">
-          <label for="o-hold">Холд</label>
-          <input id="o-hold" type="text" autocomplete="off" placeholder="14 дней">
-        </div>
-
-        <div class="field">
           <label for="o-badge">Метка на карточке</label>
-          <input id="o-badge" type="text" autocomplete="off" placeholder="Топ недели">
+          <input id="o-badge" type="text" autocomplete="off" placeholder="Топ выдачи">
+        </div>
+
+        <div class="field">
+          <label for="o-payout">Выплата</label>
+          <input id="o-payout" type="text" autocomplete="off" placeholder="3 000 ₽">
+        </div>
+
+        <div class="field">
+          <label for="o-payfor">За что платят</label>
+          <input id="o-payfor" type="text" autocomplete="off" placeholder="за активацию карты" aria-describedby="o-payfor-hint">
+          <p class="hint" id="o-payfor-hint">Короткая строка рядом с суммой: за выданный заём, за первый платёж по счёту.</p>
+        </div>
+
+        <div class="field field--full">
+          <fieldset class="facts" id="o-facts-box">
+            <legend>Условия продукта</legend>
+            <p class="hint" id="o-facts-hint">Пары «условие — значение»: например «Без процентов» и «120 дней». Показываются в карточке в этом же порядке.</p>
+            <div id="o-facts"></div>
+            <p class="hint" id="o-facts-count"></p>
+            <button type="button" class="btn btn--line btn--sm" id="o-facts-add" aria-describedby="o-facts-count">Добавить условие</button>
+          </fieldset>
         </div>
 
         <div class="field field--full">
           <label for="o-url">Ссылка <span class="req" aria-hidden="true">*</span></label>
           <input id="o-url" type="text" required aria-required="true" autocomplete="off" spellcheck="false" placeholder="https://…" aria-describedby="o-url-err o-url-hint">
           <p class="err" id="o-url-err" hidden></p>
-          <p class="hint" id="o-url-hint">Её забирают по кнопке «Забрать ссылку».</p>
-        </div>
-
-        <div class="field field--full">
-          <label for="o-sources">Источники трафика</label>
-          <input id="o-sources" type="text" autocomplete="off" placeholder="FB, UAC, ASO">
+          <p class="hint" id="o-url-hint">Твоя партнёрская ссылка — её копируют по кнопке «Скопировать ссылку».</p>
         </div>
 
         <div class="field field--full">
           <label for="o-note">Заметка</label>
-          <textarea id="o-note" rows="3" autocomplete="off" placeholder="Что важно знать перед заливом"></textarea>
+          <textarea id="o-note" rows="3" autocomplete="off" placeholder="Что сказать клиенту, кому подойдёт, где обычно отказ"></textarea>
         </div>
 
         <div class="field field--full">
@@ -283,7 +284,7 @@
             <label for="o-active">Оффер активен</label>
             <span class="switch__state" id="o-active-state">Активен</span>
           </div>
-          <p class="hint" id="o-active-hint">Снимешь галочку — карточка останется на витрине с пометкой «На паузе», но кнопок «Забрать ссылку» и «Перейти» у неё не будет.</p>
+          <p class="hint" id="o-active-hint">Снимешь галочку — карточка останется на витрине с пометкой «На паузе», но кнопок «Скопировать ссылку» и «Перейти» у неё не будет.</p>
         </div>
       </div>
 
@@ -346,7 +347,7 @@
 <p class="vh" id="live" role="status" aria-live="polite" aria-atomic="true"></p>
 <p class="vh" id="live-alert" role="alert" aria-atomic="true"></p>
 
-<script src="data.js?v=3"></script>
-<script src="admin.js?v=3"></script>
+<script src="data.js?v=10"></script>
+<script src="admin.js?v=10"></script>
 </body>
 </html>
