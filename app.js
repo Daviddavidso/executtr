@@ -254,7 +254,7 @@
     return b ? b + " — " + t : t;
   }
 
-  function buildCard(o) {
+  function buildCard(o, pos) {
     var paused = o.active === false;
 
     // Ключ должен быть один и тот же при каждой перерисовке — на нём держатся
@@ -267,8 +267,14 @@
     card.setAttribute("aria-labelledby", uid + "-t");
     li.appendChild(card);
 
-    /* Верх: категория, метка, статус */
+    /* Верх: номер, категория, метка, статус */
     var top = el("div", "card__top");
+
+    // Номер — оформление, а не содержание: вслух он только мешает.
+    var idx = el("span", "card__idx mono", (pos < 9 ? "0" : "") + (pos + 1));
+    idx.setAttribute("aria-hidden", "true");
+    top.appendChild(idx);
+
     var cl = catLabel(o.cat);
     if (cl) {
       var ct = el("span", "tag tag--cat");
@@ -276,9 +282,14 @@
       ct.appendChild(document.createTextNode(cl));
       top.appendChild(ct);
     }
-    if (o.badge && !paused) top.appendChild(el("span", "tag tag--badge", o.badge));
+    if (o.badge && !paused) {
+      var bt = el("span", "tag tag--badge card__badge-slot");
+      bt.appendChild(el("span", "vh", "Метка: "));
+      bt.appendChild(document.createTextNode(o.badge));
+      top.appendChild(bt);
+    }
     if (paused) {
-      var pt = el("span", "tag tag--pause");
+      var pt = el("span", "tag tag--pause card__badge-slot");
       pt.id = uid + "-state";
       pt.appendChild(el("span", "vh", "Статус: "));
       pt.appendChild(document.createTextNode("На паузе"));
@@ -400,7 +411,7 @@
 
     cardsBox.textContent = "";
     var frag = document.createDocumentFragment();
-    list.forEach(function (o) { frag.appendChild(buildCard(o)); });
+    list.forEach(function (o, i) { frag.appendChild(buildCard(o, i)); });
     cardsBox.appendChild(frag);
 
     var paused = list.filter(function (o) { return o.active === false; }).length;
