@@ -425,6 +425,7 @@
 
     if (emptyBox) emptyBox.hidden = list.length > 0;
 
+    markCardsShown();
     restoreFocus(memo, trigger);
 
     /* Озвучиваем только через #live: если счётчик сделать живой областью,
@@ -729,8 +730,130 @@
   // Если человек поменял системную настройку на лету — снимаем сдвиги.
   if (reduce.addEventListener) {
     reduce.addEventListener("change", function () {
-      if (reduce.matches) $$("[data-par]").forEach(function (L) { L.style.transform = ""; });
-      else initParallax();
+      if (reduce.matches) {
+        $$("[data-par]").forEach(function (L) { L.style.transform = ""; });
+        stopReveal();
+      } else {
+        initParallax();
+        initReveal();
+      }
+    });
+  }
+
+  /* ---------- Появление на скролле ----------
+     Клиент просил «более полноценную» анимацию. Блоки выезжают снизу, когда
+     доходят до экрана, карточки — с небольшой задержкой друг за другом.
+     Класс с начальным состоянием ставит только скрипт и только когда анимация
+     разрешена: иначе при выключенном движении или сломанном JS контент остался
+     бы навсегда прозрачным. */
+
+  var revealIO = null;
+  var revealBooted = false;
+
+  function revealTargets() {
+    return $$(".section__head, .step, .faq__item, .lead__card, .cards > li, .hero__stats");
+  }
+
+  function stopReveal() {
+    if (revealIO) { revealIO.disconnect(); revealIO = null; }
+    document.documentElement.dataset.reveal = "off";
+    $$("[data-in]").forEach(function (n) { n.removeAttribute("data-in"); n.style.transitionDelay = ""; });
+  }
+
+  function initReveal() {
+    if (!motionAllowed() || typeof IntersectionObserver !== "function") return;
+    document.documentElement.dataset.reveal = "on";
+
+    if (!revealIO) {
+      revealIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          e.target.setAttribute("data-in", "yes");
+          revealIO.unobserve(e.target);
+        });
+      }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    }
+
+    var vh = window.innerHeight || 800;
+
+    revealTargets().forEach(function (n, i) {
+      if (n.hasAttribute("data-in")) return;
+      // Ступенька только внутри одного ряда карточек — иначе последние
+      // карточки ждали бы своей очереди пару секунд.
+      if (n.parentNode && n.parentNode.id === "cards") {
+        n.style.transitionDelay = (i % 3) * 70 + "ms";
+      }
+
+      /* То, что уже на экране, показываем по таймеру, а не через наблюдателя:
+         в фоновых вкладках браузер может не дать ему сработать, и блок
+         остался бы прозрачным. Небольшая задержка — чтобы анимация всё-таки
+         проигралась, а не «щёлкнула». */
+      var box = n.getBoundingClientRect();
+      if (box.top < vh && box.bottom > 0) {
+        setTimeout(function () { n.setAttribute("data-in", "yes"); }, 90);
+        return;
+      }
+      revealIO.observe(n);
+    });
+    revealBooted = true;
+  }
+
+  /* Перерисовка каталога — это фильтр или поиск, а не первое появление:
+     новые карточки показываем сразу, иначе они мигают на каждую букву. */
+  function markCardsShown() {
+    if (!revealBooted) return;
+    $$(".cards > li").forEach(function (n) { n.setAttribute("data-in", "yes"); });
+  }
+
+  /* Подстраховка: показываем всё, что уже попало на экран, не дожидаясь
+     наблюдателя. Во встроенных браузерах мессенджеров и в фоновых вкладках он
+     может не сработать вовремя, а пустой блок — это хуже, чем блок без
+     анимации. Вызывается на скролле и когда страница снова становится видимой. */
+  function revealInView() {
+    if (!revealIO) return;
+    var vh = window.innerHeight || 800;
+    revealTargets().forEach(function (n) {
+      if (n.hasAttribute("data-in")) return;
+      var box = n.getBoundingClientRect();
+      if (box.top < vh && box.bottom > 0) {
+        n.setAttribute("data-in", "yes");
+        revealIO.unobserve(n);
+      }
+    });
+  }
+
+  var revealTimer = null;
+  window.addEventListener("scroll", function () {
+    if (!revealIO || revealTimer) return;
+    revealTimer = setTimeout(function () { revealTimer = null; revealInView(); }, 200);
+  }, { passive: true });
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState !== "visible") return;
+    revealInView();
+    countUp();
+  });
+
+  /* ---------- Счётчики в хиро ----------
+     Цифры добегают до своего значения, когда блок появился на экране. */
+
+  function countUp() {
+    if (!motionAllowed()) return;
+    var box = $(".hero__stats");
+    if (!box || box.dataset.counted) return;
+    box.dataset.counted = "yes";
+
+    $$("b", box).forEach(function (n) {
+      var target = parseInt(n.textContent, 10);
+      if (!target || target < 2) return;
+      var from = Date.now(), dur = 700;
+      n.textContent = "0";
+      (function step() {
+        var p = Math.min(1, (Date.now() - from) / dur);
+        // Замедление к концу: без него счёт выглядит механическим.
+        n.textContent = String(Math.round(target * (1 - Math.pow(1 - p, 3))));
+        if (p < 1) setTimeout(step, 32);
+      })();
     });
   }
 
@@ -967,13 +1090,14 @@
       if (motionOn) {
         delete document.documentElement.dataset.motion;
         initParallax();
+        initReveal();
         window.dispatchEvent(new Event("scroll"));
-        say("Фон в движении включён");
       } else {
         document.documentElement.dataset.motion = "off";
         $$("[data-par]").forEach(function (L) { L.style.transform = ""; });
-        say("Фон в движении выключен");
+        stopReveal();
       }
+      // Состояние проговаривает aria-pressed, второй раз повторять не надо.
       try { localStorage.setItem("executtr:motion", motionOn ? "on" : "off"); } catch (err) { /* приватный режим */ }
     });
   }
@@ -987,4 +1111,6 @@
   buildFaq();
   render(false);
   initParallax();
+  initReveal();
+  countUp();
 })();

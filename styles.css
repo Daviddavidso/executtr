@@ -442,6 +442,11 @@ a { color: inherit; }
 .hero {
   position: relative;
   padding: 46px 0 56px;
+  /* hidden — запас для старых браузеров (Safari до 16, встроенные вебвью
+     в мессенджерах): там clip не работает, декоративные слои вылезают за
+     край и страница становится шире экрана — на телефоне это выглядит так,
+     будто сайт «косит» влево. */
+  overflow: hidden;
   overflow: clip;
 }
 @media (min-width: 760px)  { .hero { padding: 76px 0 88px; } }
@@ -452,6 +457,9 @@ a { color: inherit; }
   inset: -10% -5% -20%;
   pointer-events: none;
   z-index: 0;
+  /* Слои внутри режем ещё и здесь: если у браузера нет clip, обрезка
+     секции не сработает, а эта — сработает. */
+  overflow: hidden;
 }
 
 .hero__grid {
@@ -745,6 +753,11 @@ a { color: inherit; }
 }
 
 .chip {
+  /* Обязательно: внутри кнопки лежит .vh с position:absolute. Без своего
+     контекста позиционирования такой спан считается от всей страницы, а
+     лента фильтров шире экрана — и страница получала лишние 600px ширины.
+     На телефоне это ровно тот самый перекос влево. */
+  position: relative;
   flex: 0 0 auto;
   scroll-snap-align: start;
   min-height: 42px;
@@ -785,13 +798,15 @@ a { color: inherit; }
    Карточки офферов
    -------------------------------------------------------------------------- */
 
+/* Зазор специально крупный: на телефоне карточки идут одна под другой, и при
+   мелком отступе они читаются как один сплошной текст. */
 .cards {
   display: grid;
-  gap: 14px;
+  gap: 26px;
   grid-template-columns: minmax(0, 1fr);
 }
-@media (min-width: 660px)  { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; } }
-@media (min-width: 1100px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } }
+@media (min-width: 560px)  { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+@media (min-width: 1100px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; } }
 
 /* Карточка — страница каталога, а не «плашка с тенью»: жёсткие углы,
    волосяная рамка, толстая линейка сверху и типографика как в хиро. */
@@ -802,7 +817,9 @@ a { color: inherit; }
   min-width: 0;
   padding: 18px 18px 20px;
   background: var(--paper-card);
-  border: 1px solid var(--hair);
+  /* Рамка чуть темнее волосяной: белая карточка на светлой бумаге иначе
+     сливается с фоном, и край карточки не читается. */
+  border: 1px solid #D3D8CE;
   border-top: 3px solid var(--ink);
   border-radius: 3px;
   transition: border-color .18s var(--ease), background-color .18s var(--ease);
@@ -967,6 +984,44 @@ a { color: inherit; }
   height: 4px;
   background: var(--green);
 }
+
+/* --------------------------------------------------------------------------
+   Появление на скролле. Начальное состояние включает только скрипт
+   (html[data-reveal="on"]) — при выключенном движении или без JS всё на месте.
+   -------------------------------------------------------------------------- */
+
+[data-reveal="on"] .section__head,
+[data-reveal="on"] .step,
+[data-reveal="on"] .faq__item,
+[data-reveal="on"] .lead__card,
+[data-reveal="on"] .hero__stats,
+[data-reveal="on"] .cards > li {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .5s var(--ease), transform .5s var(--ease);
+}
+/* Каждый селектор повторяем с [data-in]: у списка карточек
+   («.cards > li») специфичность выше из-за типа элемента, и короткое
+   правило [data-in] его не перебивало — карточки не проявлялись вообще. */
+[data-reveal="on"] .section__head[data-in],
+[data-reveal="on"] .step[data-in],
+[data-reveal="on"] .faq__item[data-in],
+[data-reveal="on"] .lead__card[data-in],
+[data-reveal="on"] .hero__stats[data-in],
+[data-reveal="on"] .cards > li[data-in] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Зелёная подсечка под суммой дорисовывается вместе с карточкой. */
+[data-reveal="on"] .cards > li .card__pay.is-live .card__pay-sum::after {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .45s var(--ease) .12s;
+}
+[data-reveal="on"] .cards > li[data-in] .card__pay.is-live .card__pay-sum::after {
+  transform: scaleX(1);
+}
 .card__pay-for {
   display: block;
   margin-top: 13px;
@@ -1094,7 +1149,7 @@ a { color: inherit; }
    Как работаем
    -------------------------------------------------------------------------- */
 
-.flow { overflow: clip; }
+.flow { overflow: hidden; overflow: clip; }
 .flow__blob {
   position: absolute;
   width: 60vw; max-width: 520px;
@@ -1198,7 +1253,7 @@ a { color: inherit; }
    Заявка
    -------------------------------------------------------------------------- */
 
-.lead { overflow: clip; }
+.lead { overflow: hidden; overflow: clip; }
 .lead__blob {
   position: absolute;
   width: 56vw; max-width: 460px;
@@ -1453,6 +1508,16 @@ a { color: inherit; }
   .ticker__track { animation: none; transform: none; }
   [data-par] { transform: none !important; }
   .btn:hover, .card:hover { transform: none; }
+  /* Появление отключаем целиком, а не ускоряем: скрипт при уменьшенной
+     анимации класс не ставит, но подстраховаться дешевле, чем однажды
+     оставить блок прозрачным. */
+  [data-reveal="on"] .section__head,
+  [data-reveal="on"] .step,
+  [data-reveal="on"] .faq__item,
+  [data-reveal="on"] .lead__card,
+  [data-reveal="on"] .hero__stats,
+  [data-reveal="on"] .cards > li { opacity: 1 !important; transform: none !important; }
+  [data-reveal="on"] .card__pay.is-live .card__pay-sum::after { transform: none !important; }
 }
 
 /* Тот же результат, но по кнопке в подвале — для тех, у кого системная
