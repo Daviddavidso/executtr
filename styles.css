@@ -1,5 +1,5 @@
 /* ==========================================================================
-   EXECUTTR — витрина офферов
+   CASHMACHINE — подбор финансовых продуктов
    Одна тема: бумага, чёрный, зелёный. Mobile-first.
    Контрастные пары проверены: основной текст 19.6:1, второстепенный 6.6:1,
    границы полей 3.9:1, зелёный текст 4.5:1.
@@ -959,32 +959,6 @@ a { color: inherit; }
   border-top: 1px solid var(--hair);
 }
 
-/* Выплата — главное число карточки. Не зелёная плашка, а крупная цифра
-   с зелёной подсечкой: то же, что заголовок в хиро, только в цифрах. */
-.card__pay {
-  display: block;
-  margin-bottom: 16px;
-}
-.card__pay-sum {
-  /* inline-block — чтобы зелёная подсечка была по ширине самой суммы,
-     а не превращалась в разделитель на всю карточку. */
-  display: inline-block;
-  position: relative;
-  font-size: 34px;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.card__pay.is-live .card__pay-sum::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: -5px;
-  height: 4px;
-  background: var(--green);
-}
-
 /* --------------------------------------------------------------------------
    Появление на скролле. Начальное состояние включает только скрипт
    (html[data-reveal="on"]) — при выключенном движении или без JS всё на месте.
@@ -1013,37 +987,18 @@ a { color: inherit; }
   transform: none;
 }
 
-/* Зелёная подсечка под суммой дорисовывается вместе с карточкой. */
-[data-reveal="on"] .cards > li .card__pay.is-live .card__pay-sum::after {
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform .45s var(--ease) .12s;
-}
-[data-reveal="on"] .cards > li[data-in] .card__pay.is-live .card__pay-sum::after {
-  transform: scaleX(1);
-}
-.card__pay-for {
-  display: block;
-  margin-top: 13px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.card--paused .card__pay-sum { color: var(--muted); }
 
-/* Две равные кнопки делали карточку похожей на форму. Копирование —
-   основное действие и остаётся кнопкой, «Перейти» — текстовая ссылка. */
+/* Две равные кнопки делали карточку похожей на форму. Главное действие —
+   «Оформить», рядом текстом — копирование ссылки. Селекторы по data-act,
+   чтобы стиль не зависел от того, кнопка это или ссылка. */
 .card__actions {
   display: flex;
   align-items: center;
   gap: 16px;
   margin-top: auto;
 }
-.card__actions .btn--ink { flex: 0 1 auto; }
-.card__actions .btn--line {
+.card__actions [data-act="go"] { flex: 0 1 auto; }
+.card__actions [data-act="copy"] {
   flex: 0 0 auto;
   min-height: 0;
   padding: 0;
@@ -1060,11 +1015,16 @@ a { color: inherit; }
   text-underline-offset: 4px;
   text-decoration-thickness: 1px;
 }
-.card__actions .btn--line::after { content: " ↗"; text-decoration: none; }
-.card__actions .btn--line:hover {
+.card__actions [data-act="copy"]:hover {
   background: none;
   color: var(--green-ink);
   text-decoration-thickness: 2px;
+}
+/* Успех копирования на текстовой кнопке: зелёный текст и галочка,
+   заливку тут рисовать некуда. */
+.card__actions [data-act="copy"].is-done {
+  color: var(--green-ink);
+  background: none;
 }
 
 /* Подпись кнопки при копировании не меняется — она и есть доступное имя.
@@ -1517,7 +1477,6 @@ a { color: inherit; }
   [data-reveal="on"] .lead__card,
   [data-reveal="on"] .hero__stats,
   [data-reveal="on"] .cards > li { opacity: 1 !important; transform: none !important; }
-  [data-reveal="on"] .card__pay.is-live .card__pay-sum::after { transform: none !important; }
 }
 
 /* Тот же результат, но по кнопке в подвале — для тех, у кого системная

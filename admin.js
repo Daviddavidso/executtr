@@ -1,4 +1,4 @@
-/* EXECUTTR — панель управления витриной.
+/* CASHMACHINE — панель управления витриной.
    Черновик лежит в localStorage, на сайт уезжает через api.php. */
 (function () {
   "use strict";
@@ -229,7 +229,7 @@
     $("#s-tagline").value = s.tagline || "";
     $("#s-lead").value = s.lead || "";
     $("#s-tg").value = s.telegram || "";
-    $$("[data-brand]").forEach(function (n) { n.textContent = s.name || "EXECUTTR"; });
+    $$("[data-brand]").forEach(function (n) { n.textContent = s.name || "CASHMACHINE"; });
   }
 
   $("#site-form").addEventListener("submit", function (e) {

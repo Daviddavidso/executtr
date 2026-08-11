@@ -1,4 +1,4 @@
-/* EXECUTTR — витрина офферов.
+/* CASHMACHINE — витрина финансовых продуктов.
    Ванильный JS, без сборки. Данные приходят из data.js (его пишет админка). */
 (function () {
   "use strict";
@@ -59,7 +59,7 @@
     var name = (SITE.name || "").trim();
     if (name) {
       $$("[data-brand]").forEach(function (n) { n.textContent = name; });
-      document.title = name + " — " + (SITE.tagline || "витрина офферов");
+      document.title = name + " — " + (SITE.tagline || "подбор финансовых продуктов");
     }
     if (SITE.tagline) $$("[data-tagline]").forEach(function (n) { n.textContent = SITE.tagline; });
     if (SITE.lead) { var l = $("[data-lead]"); if (l) l.textContent = SITE.lead; }
@@ -115,7 +115,7 @@
       var b = String(o.bank || "").trim();
       if (b && words.indexOf(b) < 0) words.push(b);
     });
-    if (!words.length) words = ["Офферы", "Банки", "Выплаты"];
+    if (!words.length) words = ["Карты", "Займы", "Счета"];
 
     // Лента крутится на -50%, поэтому содержимое дублируется ровно дважды.
     var half = document.createDocumentFragment();
@@ -162,7 +162,8 @@
   function matches(o) {
     if (state.cat !== "all" && o.cat !== state.cat) return false;
     if (!state.q) return true;
-    var hay = [o.title, o.bank, o.payout, o.payFor, o.note, o.badge, catLabel(o.cat)];
+    // Выплату в поиск не берём: её на витрине нет, искать по ней нечего.
+    var hay = [o.title, o.bank, o.note, o.badge, catLabel(o.cat)];
     factsOf(o).forEach(function (f) { hay.push(f.k, f.v); });
     return hay.join(" ").toLowerCase().indexOf(state.q) >= 0;
   }
@@ -187,7 +188,7 @@
       badge.setAttribute("aria-hidden", "true");
       b.appendChild(badge);
       // Для скринридера счётчик проговариваем словами, а не «Кредитки 5».
-      b.appendChild(el("span", "vh", ", " + n + " " + plural(n, "оффер", "оффера", "офферов")));
+      b.appendChild(el("span", "vh", ", " + n + " " + plural(n, "продукт", "продукта", "продуктов")));
 
       b.addEventListener("click", function () {
         state.cat = c.id;
@@ -220,7 +221,7 @@
       var badge = $(".chip__n", b);
       if (badge) badge.textContent = String(n);
       var vh = $(".vh", b);
-      if (vh) vh.textContent = ", " + n + " " + plural(n, "оффер", "оффера", "офферов");
+      if (vh) vh.textContent = ", " + n + " " + plural(n, "продукт", "продукта", "продуктов");
     });
   }
 
@@ -320,45 +321,42 @@
     factsOf(o).forEach(function (f) { spec(dl, f.k, f.v); });
     if (dl.children.length) card.appendChild(dl);
 
-    /* Выплата агенту */
-    if (o.payout) {
-      var pay = el("div", "card__pay" + (paused ? "" : " is-live"));
-      pay.appendChild(el("span", "vh", "Выплата: "));
-      pay.appendChild(el("b", "card__pay-sum", o.payout));
-      pay.appendChild(el("span", "card__pay-for", o.payFor || "за подтверждённую заявку"));
-      card.appendChild(pay);
-    }
+    /* Вознаграждение (`payout`, `payFor`) на витрину не выводим сознательно:
+       это внутренние цифры, их видно только в панели управления. */
 
     if (o.note) card.appendChild(el("p", "card__note", o.note));
 
-    /* Действия */
+    /* Действия. Главное — «Оформить»: витрина для того, кто выбирает продукт.
+       Кнопка «Скопировать ссылку» рядом остаётся: ей пользуются, когда продукт
+       нужно отправить в переписке. */
     if (paused) {
       var lock = el("div", "card__locked");
       lock.id = uid + "-why";
       lock.appendChild(lockIcon());
-      lock.appendChild(el("span", null, "Оффер на паузе — ссылку забрать нельзя"));
+      lock.appendChild(el("span", null, "Приём заявок приостановлен"));
       card.appendChild(lock);
     } else {
       var act = el("div", "card__actions");
 
-      var copy = el("button", "btn btn--ink", "Скопировать ссылку");
-      copy.type = "button";
-      copy.dataset.act = "copy";
-      copy.appendChild(el("span", "vh", " на оффер " + offerName(o)));
-      copy.addEventListener("click", function () { copyLink(o, copy); });
-      act.appendChild(copy);
-
       if (o.url) {
-        var go = el("a", "btn btn--line", "Перейти");
+        var go = el("a", "btn btn--ink", "Оформить");
         go.href = o.url;
         go.target = "_blank";
         go.dataset.act = "go";
         // sponsored — для партнёрских ссылок. noreferrer не ставим:
         // без Referer партнёрка может не привязать переход.
         go.rel = "noopener nofollow sponsored";
-        go.appendChild(el("span", "vh", " на страницу оффера " + offerName(o) + " (откроется в новой вкладке)"));
+        go.appendChild(el("span", "vh", " " + offerName(o) + " (откроется в новой вкладке)"));
         act.appendChild(go);
       }
+
+      var copy = el("button", "btn btn--line", "Скопировать ссылку");
+      copy.type = "button";
+      copy.dataset.act = "copy";
+      copy.appendChild(el("span", "vh", " на " + offerName(o)));
+      copy.addEventListener("click", function () { copyLink(o, copy); });
+      act.appendChild(copy);
+
       card.appendChild(act);
     }
 
@@ -415,7 +413,7 @@
     cardsBox.appendChild(frag);
 
     var paused = list.filter(function (o) { return o.active === false; }).length;
-    var txt = list.length + " " + plural(list.length, "оффер", "оффера", "офферов");
+    var txt = list.length + " " + plural(list.length, "продукт", "продукта", "продуктов");
     if (paused) txt += " · " + paused + " на паузе";
     // Вслух — словами: точку-разделитель скринридеры читают как «точка».
     var said = list.length
@@ -471,7 +469,7 @@
       btn.classList.add("is-done");
       setTimeout(function () { btn.classList.remove("is-done"); }, 2200);
       showToast("Ссылка на «" + offerName(o) + "» скопирована");
-      say("Ссылка на оффер " + offerName(o) + " скопирована в буфер обмена. Отправляй её клиенту как есть, не сокращай.");
+      say("Ссылка на " + offerName(o) + " скопирована в буфер обмена.");
     } else {
       showManualCopy(o, btn);
     }
@@ -486,7 +484,7 @@
     // человек нажал «скопировать», а не «перейти». Просто говорим, что делать.
     if (!card) {
       shout("Скопировать не удалось: браузер не дал доступ к буферу обмена. " +
-            "Открой оффер кнопкой «Перейти» и скопируй адрес из строки браузера.");
+            "Открой продукт кнопкой «Оформить» и скопируй адрес из строки браузера.");
       return;
     }
 
@@ -512,7 +510,7 @@
 
     var close = el("button", "linkish", "Скрыть");
     close.type = "button";
-    close.appendChild(el("span", "vh", " поле со ссылкой на оффер " + offerName(o)));
+    close.appendChild(el("span", "vh", " поле со ссылкой на " + offerName(o)));
     close.addEventListener("click", function () {
       box.remove();
       if (btn.isConnected) btn.focus(); else headingAnchor().focus();
@@ -527,8 +525,8 @@
 
   function copyLink(o, btn) {
     if (!o.url) {
-      showToast("У оффера «" + offerName(o) + "» пока нет ссылки");
-      say("У оффера " + offerName(o) + " пока нет ссылки. Добавь её в панели управления.");
+      showToast("У «" + offerName(o) + "» пока нет ссылки");
+      say("У " + offerName(o) + " пока нет ссылки. Добавь её в панели управления.");
       return;
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -569,7 +567,7 @@
       var dest = $(".chip", filtersBox) || qInput || headingAnchor();
       if (dest) dest.focus();
       render(false, dest);
-      say("Фильтр сброшен. " + OFFERS.length + " " + plural(OFFERS.length, "оффер", "оффера", "офферов") + ".");
+      say("Фильтр сброшен. " + OFFERS.length + " " + plural(OFFERS.length, "продукт", "продукта", "продуктов") + ".");
     });
   }
 

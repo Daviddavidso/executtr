@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Панель управления — EXECUTTR</title>
+<title>Панель управления — CASHMACHINE</title>
 <meta name="theme-color" content="#F6F7F4">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%230A0C0A'/><path d='M11 9h11M11 16h8M11 23h11' stroke='%232FBF63' stroke-width='3' stroke-linecap='round'/></svg>">
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="styles.css?v=16">
-<link rel="stylesheet" href="admin.css?v=16">
+<link rel="stylesheet" href="styles.css?v=18">
+<link rel="stylesheet" href="admin.css?v=18">
 </head>
 <body class="admin-body">
 
@@ -54,12 +54,12 @@
 <!-- ─────────────  ШАПКА  ───────────── -->
 <header class="masthead" id="masthead" hidden>
   <div class="shell masthead__inner">
-    <a class="brand" href="./" aria-label="EXECUTTR — открыть витрину">
+    <a class="brand" href="./" aria-label="CASHMACHINE — открыть витрину">
       <span class="brand__mark" aria-hidden="true">
         <svg viewBox="0 0 32 32" width="30" height="30" focusable="false"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M11 9h11M11 16h8M11 23h11" stroke="#2FBF63" stroke-width="3" stroke-linecap="round"/></svg>
       </span>
       <span class="brand__text">
-        <b class="brand__name" data-brand>EXECUTTR</b>
+        <b class="brand__name" data-brand>CASHMACHINE</b>
         <span class="brand__sub mono">панель управления</span>
       </span>
     </a>
@@ -112,7 +112,7 @@
         </div>
         <div class="field">
           <label for="s-tg">Ссылка на Telegram</label>
-          <input id="s-tg" type="text" autocomplete="off" spellcheck="false" placeholder="https://t.me/executtr" aria-describedby="s-tg-hint">
+          <input id="s-tg" type="text" autocomplete="off" spellcheck="false" placeholder="https://t.me/…" aria-describedby="s-tg-hint">
           <p class="hint" id="s-tg-hint">Пусто — кнопки «Написать в Telegram» на сайте не будет.</p>
         </div>
         <div class="field field--full">
@@ -247,13 +247,14 @@
 
         <div class="field">
           <label for="o-payout">Выплата</label>
-          <input id="o-payout" type="text" autocomplete="off" placeholder="3 000 ₽">
+          <input id="o-payout" type="text" autocomplete="off" placeholder="3 000 ₽" aria-describedby="o-payout-hint">
+          <p class="hint" id="o-payout-hint">Только для тебя: на витрине выплата не показывается.</p>
         </div>
 
         <div class="field">
           <label for="o-payfor">За что платят</label>
           <input id="o-payfor" type="text" autocomplete="off" placeholder="за активацию карты" aria-describedby="o-payfor-hint">
-          <p class="hint" id="o-payfor-hint">Короткая строка рядом с суммой: за выданный заём, за первый платёж по счёту.</p>
+          <p class="hint" id="o-payfor-hint">Тоже видно только здесь: за выданный заём, за первый платёж по счёту.</p>
         </div>
 
         <div class="field field--full">
@@ -270,7 +271,7 @@
           <label for="o-url">Ссылка <span class="req" aria-hidden="true">*</span></label>
           <input id="o-url" type="text" required aria-required="true" autocomplete="off" spellcheck="false" placeholder="https://…" aria-describedby="o-url-err o-url-hint">
           <p class="err" id="o-url-err" hidden></p>
-          <p class="hint" id="o-url-hint">Твоя партнёрская ссылка — её копируют по кнопке «Скопировать ссылку».</p>
+          <p class="hint" id="o-url-hint">Твоя партнёрская ссылка: по ней уходят с кнопки «Оформить».</p>
         </div>
 
         <div class="field field--full">
@@ -284,7 +285,7 @@
             <label for="o-active">Оффер активен</label>
             <span class="switch__state" id="o-active-state">Активен</span>
           </div>
-          <p class="hint" id="o-active-hint">Снимешь галочку — карточка останется на витрине с пометкой «На паузе», но кнопок «Скопировать ссылку» и «Перейти» у неё не будет.</p>
+          <p class="hint" id="o-active-hint">Снимешь галочку — карточка останется на витрине с пометкой «На паузе», но кнопок «Оформить» и «Скопировать ссылку» у неё не будет.</p>
         </div>
       </div>
 
@@ -347,7 +348,7 @@
 <p class="vh" id="live" role="status" aria-live="polite" aria-atomic="true"></p>
 <p class="vh" id="live-alert" role="alert" aria-atomic="true"></p>
 
-<script src="data.js?v=16"></script>
-<script src="admin.js?v=16"></script>
+<script src="data.js?v=18"></script>
+<script src="admin.js?v=18"></script>
 </body>
 </html>

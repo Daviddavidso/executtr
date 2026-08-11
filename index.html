@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>EXECUTTR — витрина офферов</title>
-<meta name="description" content="Кредитные и дебетовые карты, займы, кредиты наличными и РКО в одном месте: условия, выплата и ссылка, которую можно скопировать в один клик.">
+<title>CASHMACHINE — подбор финансовых продуктов</title>
+<meta name="description" content="Кредитные и дебетовые карты, займы, кредиты наличными и счёт для бизнеса в одном каталоге: условия банков без мелкого шрифта, оформление онлайн за пару минут.">
 <meta name="theme-color" content="#F6F7F4">
-<meta property="og:title" content="EXECUTTR — витрина офферов">
-<meta property="og:description" content="Карты, займы и РКО: условия и выплата по каждому офферу. Ссылка копируется в один клик.">
+<meta property="og:title" content="CASHMACHINE — подбор финансовых продуктов">
+<meta property="og:description" content="Карты, займы и счёт для бизнеса: условия банков в одном месте, оформление онлайн.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%230A0C0A'/><path d='M11 9h11M11 16h8M11 23h11' stroke='%232FBF63' stroke-width='3' stroke-linecap='round'/></svg>">
 <link rel="preload" href="fonts/golos-q5uCsoe9Lv5t7Meb31EcExd8hK5SAMqbpw.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="styles.css?v=16">
+<link rel="stylesheet" href="styles.css?v=18">
 <!-- Выбор «фон в движении» читаем до отрисовки, иначе на долю секунды мигнёт анимация. -->
 <script>try{if(localStorage.getItem("executtr:motion")==="off")document.documentElement.dataset.motion="off";}catch(e){}</script>
 </head>
@@ -22,24 +22,25 @@
 
 <header class="masthead" id="masthead">
   <div class="shell masthead__inner">
-    <a class="brand" href="./" aria-label="EXECUTTR — на главную">
+    <a class="brand" href="./" aria-label="CASHMACHINE — на главную">
       <span class="brand__mark" aria-hidden="true">
         <svg viewBox="0 0 32 32" width="30" height="30" focusable="false"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M11 9h11M11 16h8M11 23h11" stroke="#2FBF63" stroke-width="3" stroke-linecap="round"/></svg>
       </span>
       <span class="brand__text">
-        <b class="brand__name" data-brand>EXECUTTR</b>
-        <span class="brand__sub mono" data-tagline>витрина офферов</span>
+        <b class="brand__name" data-brand>CASHMACHINE</b>
+        <span class="brand__sub mono" data-tagline>подбор финансовых продуктов</span>
       </span>
     </a>
 
     <nav class="masthead__nav" id="site-nav" aria-label="Разделы сайта">
       <ul role="list">
-        <li><a href="#catalog">Витрина</a></li>
-        <li><a href="#flow">Как работаем</a></li>
+        <li><a href="#catalog">Каталог</a></li>
+        <li><a href="#flow">Как это работает</a></li>
         <li><a href="#faq">Вопросы</a></li>
-        <li><a href="#lead">Заявка</a></li>
       </ul>
-      <a class="btn btn--ink masthead__cta" href="#lead">Оставить заявку</a>
+      <!-- Ссылку на форму в меню не дублируем: рядом стоит кнопка, которая
+           ведёт туда же, и два почти одинаковых пункта читаются как ошибка. -->
+      <a class="btn btn--ink masthead__cta" href="#lead">Помочь с выбором</a>
     </nav>
 
     <button type="button" class="burger" id="burger" aria-expanded="false" aria-controls="site-nav">
@@ -78,27 +79,27 @@
     <div class="shell hero__inner">
       <p class="eyebrow mono">
         <span class="eyebrow__idx">01</span>
-        <span>витрина офферов</span>
+        <span>каталог продуктов</span>
         <span class="eyebrow__dot" aria-hidden="true">·</span>
         <span>обновлено <time id="updated-at" datetime="2026-08-09">09.08.2026</time></span>
       </p>
 
       <h1 class="hero__title">
-        Бери ссылку<br>
-        и <span class="hero__hl"><span class="hero__hl-in">отправляй</span></span>
+        Выбирай<br>
+        и <span class="hero__hl"><span class="hero__hl-in">оформляй</span></span>
       </h1>
 
-      <p class="hero__lead" data-lead>Кредитки, дебетовки, займы и РКО — всё в одном месте. Открыл карточку, скопировал ссылку, отправил клиенту в личку. Всё, что встало на паузу, остаётся на витрине серым — чтобы ты видел картину целиком, а не гадал, куда делся оффер.</p>
+      <p class="hero__lead" data-lead>Карты, займы и счёт для бизнеса — в одном месте и с человеческими условиями. Смотри, что подходит именно тебе, сравнивай и оформляй онлайн: заявка занимает пару минут, решение приходит сразу.</p>
 
       <div class="hero__actions">
-        <a class="btn btn--ink btn--lg" href="#catalog">Смотреть офферы</a>
-        <a class="btn btn--line btn--lg" id="hero-tg" href="https://t.me/executtr" target="_blank" rel="noopener">Написать в Telegram<span class="vh"> (откроется в новой вкладке)</span></a>
+        <a class="btn btn--ink btn--lg" href="#catalog">Смотреть продукты</a>
+        <a class="btn btn--line btn--lg" id="hero-tg" href="https://t.me/+mv1MtHMozWk2YTJi" target="_blank" rel="noopener">Написать в Telegram<span class="vh"> (откроется в новой вкладке)</span></a>
       </div>
 
       <ul class="hero__stats glass" role="list" data-par="0.05">
         <li>
           <b class="mono" id="stat-active">—</b>
-          <span>офферов в работе</span>
+          <span>продуктов в каталоге</span>
         </li>
         <li>
           <b class="mono" id="stat-banks">—</b>
@@ -122,13 +123,13 @@
     <div class="shell">
       <div class="section__head">
         <p class="eyebrow mono"><span class="eyebrow__idx">02</span><span>каталог</span></p>
-        <h2 class="section__title" id="catalog-h">Офферы</h2>
-        <p class="section__sub">Фильтруй по категории или ищи по банку и условиям. Карточки с пометкой «На паузе» сейчас не в работе — ссылку по ним забрать нельзя.</p>
+        <h2 class="section__title" id="catalog-h">Каталог</h2>
+        <p class="section__sub">Выбирай категорию или ищи по банку и условиям. Серые карточки с пометкой «На паузе» — банк временно закрыл приём заявок, оформить их сейчас нельзя.</p>
       </div>
 
       <div class="tools">
         <div class="tools__search">
-          <label class="vh" for="q">Поиск по офферам</label>
+          <label class="vh" for="q">Поиск по продуктам</label>
           <span class="tools__ico" aria-hidden="true">
             <svg viewBox="0 0 20 20" width="17" height="17" focusable="false"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13.5 13.5 17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </span>
@@ -146,7 +147,7 @@
 
       <p class="empty" id="empty" hidden>
         Ничего не нашлось. Попробуй другое слово или сбрось фильтр —
-        <button type="button" class="linkish" id="reset-filters">показать все офферы</button>.
+        <button type="button" class="linkish" id="reset-filters">показать все продукты</button>.
       </p>
     </div>
   </section>
@@ -163,18 +164,18 @@
       <ol class="steps" role="list">
         <li class="step">
           <span class="step__n mono" aria-hidden="true">01</span>
-          <h3>Копируешь ссылку</h3>
-          <p>Открываешь карточку нужного оффера, жмёшь «Скопировать ссылку» — она уже в буфере. Ничего запрашивать и ждать не нужно.</p>
+          <h3>Выбираешь продукт</h3>
+          <p>В карточке собраны условия банка: срок без процентов, лимит, кэшбэк, стоимость обслуживания. Всё то же, что в договоре, только без мелкого шрифта.</p>
         </li>
         <li class="step">
           <span class="step__n mono" aria-hidden="true">02</span>
-          <h3>Отправляешь клиенту</h3>
-          <p>Кидаешь ссылку в личку как есть. Не сокращай и не переписывай хвост: внутри твоя метка, по ней заявка привязывается к тебе.</p>
+          <h3>Оформляешь онлайн</h3>
+          <p>Жмёшь «Оформить» и заполняешь заявку на сайте банка. Обычно нужен только паспорт, а решение приходит в течение пары минут.</p>
         </li>
         <li class="step">
           <span class="step__n mono" aria-hidden="true">03</span>
-          <h3>Получаешь выплату</h3>
-          <p>Клиент оформил — заявка попала в отчёт. Что считается результатом, написано в карточке: активация карты, выдача займа или первый платёж по счёту.</p>
+          <h3>Пользуешься</h3>
+          <p>Карту привозит курьер, деньги по займу приходят на счёт. Если банк закрыл приём заявок, карточка в каталоге станет серой — вернём её, как только откроют.</p>
         </li>
       </ol>
     </div>
@@ -197,8 +198,8 @@
     <div class="shell shell--narrow">
       <div class="section__head">
         <p class="eyebrow mono"><span class="eyebrow__idx">05</span><span>заявка</span></p>
-        <h2 class="section__title" id="lead-h">Хочешь получить доступ?</h2>
-        <p class="section__sub">Напиши, откуда клиенты и сколько заявок в месяц тянешь. Отвечаем в течение дня — обычно быстрее.</p>
+        <h2 class="section__title" id="lead-h">Не знаешь, что выбрать?</h2>
+        <p class="section__sub">Напиши, что нужно, — подскажем, какие условия подойдут и на что смотреть в договоре. Отвечаем в течение дня.</p>
       </div>
 
       <div class="glass lead__card">
@@ -225,14 +226,14 @@
             </div>
 
             <div class="field field--full">
-              <label for="f-source">Откуда клиенты</label>
-              <input id="f-source" name="source" type="text" autocomplete="off" placeholder="личка в Telegram, чаты, знакомые, реклама…" aria-describedby="f-source-hint">
-              <p class="hint" id="f-source-hint">Через запятую. Помогает сразу подобрать подходящие офферы.</p>
+              <label for="f-source">Что интересует</label>
+              <input id="f-source" name="source" type="text" autocomplete="off" placeholder="кредитная карта, займ, счёт для ИП…" aria-describedby="f-source-hint">
+              <p class="hint" id="f-source-hint">Через запятую. Помогает сразу подобрать подходящее.</p>
             </div>
 
             <div class="field field--full">
               <label for="f-comment">Что важно знать</label>
-              <textarea id="f-comment" name="comment" rows="4" autocomplete="off" placeholder="Сколько заявок в месяц, с какими продуктами уже работал"></textarea>
+              <textarea id="f-comment" name="comment" rows="4" autocomplete="off" placeholder="Сумма, срок, что уже пробовал оформить"></textarea>
             </div>
           </div>
 
@@ -261,19 +262,19 @@
 <footer class="footer">
   <div class="shell footer__inner">
     <div class="footer__brand">
-      <b data-brand>EXECUTTR</b>
-      <span class="mono" data-tagline>витрина офферов</span>
+      <b data-brand>CASHMACHINE</b>
+      <span class="mono" data-tagline>подбор финансовых продуктов</span>
     </div>
     <nav class="footer__nav" aria-label="Разделы сайта в подвале">
       <ul role="list">
-        <li><a href="#catalog">Витрина</a></li>
-        <li><a href="#flow">Как работаем</a></li>
+        <li><a href="#catalog">Каталог</a></li>
+        <li><a href="#flow">Как это работает</a></li>
         <li><a href="#faq">Вопросы</a></li>
-        <li><a href="#lead">Заявка</a></li>
+        <li><a href="#lead">Помощь с выбором</a></li>
       </ul>
     </nav>
     <div class="footer__meta mono">
-      <a id="footer-tg" href="https://t.me/executtr" target="_blank" rel="noopener">Telegram<span class="vh"> (откроется в новой вкладке)</span></a>
+      <a id="footer-tg" href="https://t.me/+mv1MtHMozWk2YTJi" target="_blank" rel="noopener">Telegram<span class="vh"> (откроется в новой вкладке)</span></a>
       <span aria-hidden="true">·</span>
       <span>обновлено <span id="updated-foot">09.08.2026</span></span>
       <button type="button" class="motion-toggle" id="motion-toggle" aria-pressed="true">Фон в движении</button>
@@ -294,7 +295,7 @@
 <p class="vh" id="live" role="status" aria-live="polite" aria-atomic="true"></p>
 <p class="vh" id="live-alert" role="alert" aria-atomic="true"></p>
 
-<script src="data.js?v=16"></script>
-<script src="app.js?v=16"></script>
+<script src="data.js?v=18"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>
