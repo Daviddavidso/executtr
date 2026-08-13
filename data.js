@@ -48,6 +48,7 @@ window.SITE_DATA = {
       "title": "Платиновая карта",
       "cat": "credit",
       "bank": "Т-Банк",
+      "logo": "tbank.svg",
       "payout": "3 000 ₽",
       "payFor": "за активацию и первую покупку",
       "facts": [
@@ -78,6 +79,7 @@ window.SITE_DATA = {
       "title": "Год без процентов",
       "cat": "credit",
       "bank": "Альфа-Банк",
+      "logo": "alfa.svg",
       "payout": "3 200 ₽",
       "payFor": "за первую покупку по карте",
       "facts": [
@@ -108,6 +110,7 @@ window.SITE_DATA = {
       "title": "Халва",
       "cat": "credit",
       "bank": "Совкомбанк",
+      "logo": "sovcom.svg",
       "payout": "2 400 ₽",
       "payFor": "за выданную карту",
       "facts": [
@@ -138,6 +141,7 @@ window.SITE_DATA = {
       "title": "Карта возможностей",
       "cat": "credit",
       "bank": "ВТБ",
+      "logo": "vtb.svg",
       "payout": "2 800 ₽",
       "payFor": "за активацию",
       "facts": [
@@ -168,6 +172,7 @@ window.SITE_DATA = {
       "title": "Удобная карта",
       "cat": "credit",
       "bank": "Газпромбанк",
+      "logo": "gpb.png",
       "payout": "2 600 ₽",
       "payFor": "за первую покупку",
       "facts": [
@@ -194,6 +199,7 @@ window.SITE_DATA = {
       "title": "Карта Black",
       "cat": "debit",
       "bank": "Т-Банк",
+      "logo": "tbank.svg",
       "payout": "1 400 ₽",
       "payFor": "за первую операцию",
       "facts": [
@@ -224,6 +230,7 @@ window.SITE_DATA = {
       "title": "Альфа-Карта",
       "cat": "debit",
       "bank": "Альфа-Банк",
+      "logo": "alfa.svg",
       "payout": "1 500 ₽",
       "payFor": "за первую покупку",
       "facts": [
@@ -250,6 +257,7 @@ window.SITE_DATA = {
       "title": "Ozon Card",
       "cat": "debit",
       "bank": "Озон Банк",
+      "logo": "ozon.svg",
       "payout": "900 ₽",
       "payFor": "за первую покупку",
       "facts": [
@@ -276,6 +284,7 @@ window.SITE_DATA = {
       "title": "Яндекс Пэй",
       "cat": "debit",
       "bank": "Яндекс Банк",
+      "logo": "yandex.svg",
       "payout": "700 ₽",
       "payFor": "за первую оплату",
       "facts": [
@@ -302,6 +311,7 @@ window.SITE_DATA = {
       "title": "СберКарта",
       "cat": "debit",
       "bank": "Сбер",
+      "logo": "sber.svg",
       "payout": "1 100 ₽",
       "payFor": "за первую операцию",
       "facts": [
@@ -328,6 +338,7 @@ window.SITE_DATA = {
       "title": "Займер",
       "cat": "loans",
       "bank": "Займер",
+      "logo": "zaymer.png",
       "payout": "1 300 ₽",
       "payFor": "за выданный заём",
       "facts": [
@@ -358,6 +369,7 @@ window.SITE_DATA = {
       "title": "еКапуста",
       "cat": "loans",
       "bank": "еКапуста",
+      "logo": "ekapusta.png",
       "payout": "900 ₽",
       "payFor": "за выданный заём",
       "facts": [
@@ -384,6 +396,7 @@ window.SITE_DATA = {
       "title": "MoneyMan",
       "cat": "loans",
       "bank": "MoneyMan",
+      "logo": "moneyman.png",
       "payout": "1 200 ₽",
       "payFor": "за выданный заём",
       "facts": [
@@ -410,6 +423,7 @@ window.SITE_DATA = {
       "title": "Быстроденьги",
       "cat": "loans",
       "bank": "Быстроденьги",
+      "logo": "bistrodengi.png",
       "payout": "1 000 ₽",
       "payFor": "за выданный заём",
       "facts": [
@@ -436,6 +450,7 @@ window.SITE_DATA = {
       "title": "Веб-Займ",
       "cat": "loans",
       "bank": "Веб-Займ",
+      "logo": "webzaim.png",
       "payout": "850 ₽",
       "payFor": "за выданный заём",
       "facts": [
@@ -462,6 +477,7 @@ window.SITE_DATA = {
       "title": "Кредит наличными",
       "cat": "cash",
       "bank": "Т-Банк",
+      "logo": "tbank.svg",
       "payout": "2 500 ₽",
       "payFor": "за выданный кредит",
       "facts": [
@@ -492,6 +508,7 @@ window.SITE_DATA = {
       "title": "Кредит на любые цели",
       "cat": "cash",
       "bank": "Совкомбанк",
+      "logo": "sovcom.svg",
       "payout": "2 000 ₽",
       "payFor": "за выданный кредит",
       "facts": [
@@ -548,6 +565,7 @@ window.SITE_DATA = {
       "title": "Бизнес-счёт",
       "cat": "rko",
       "bank": "Т-Банк",
+      "logo": "tbank.svg",
       "payout": "6 000 ₽",
       "payFor": "за активный счёт",
       "facts": [
@@ -604,6 +622,7 @@ window.SITE_DATA = {
       "title": "Счёт для бизнеса",
       "cat": "rko",
       "bank": "Альфа-Банк",
+      "logo": "alfa.svg",
       "payout": "4 800 ₽",
       "payFor": "за первый платёж по счёту",
       "facts": [

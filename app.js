@@ -247,6 +247,39 @@
     return s;
   }
 
+  /* Логотип банка. Картинка ничего не добавляет к тексту: название банка
+     стоит рядом строкой, поэтому alt пустой — иначе скринридер прочитает
+     банк дважды. Файла нет — рисуем инициал, чтобы ряд карточек не выглядел
+     дырявым. */
+  function logoMark(o) {
+    var file = String(o.logo || "").trim();
+    if (!file) return monoMark(o);
+
+    var box = el("span", "card__logo");
+    var img = el("img");
+    img.alt = "";
+    /* Размер задаём и в разметке: карточки пересобираются на каждой букве
+       в поиске, и картинка без размеров дёргала бы сетку после загрузки.
+       loading="lazy" здесь вредит по той же причине — после перерисовки
+       логотипы всплывали бы заново. */
+    img.width = 76; img.height = 24;
+    img.decoding = "async";
+    // Обработчик до src: файл из кэша может не открыться сразу же.
+    img.addEventListener("error", function () {
+      if (box.parentNode) box.parentNode.replaceChild(monoMark(o), box);
+    });
+    // Свой файл из админки приезжает как data:-строка, из папки — по имени.
+    img.src = /^(data:|https?:|\.?\/)/.test(file) ? file : "logos/" + file;
+    box.appendChild(img);
+    return box;
+  }
+
+  function monoMark(o) {
+    var m = el("span", "card__mono mono", String(o.bank || "?").trim().charAt(0).toUpperCase());
+    m.setAttribute("aria-hidden", "true");
+    return m;
+  }
+
   /* «Т-Банк — Платиновая карта»: и в тостах, и в подписях для скринридера
      оффер должен называться так же, как он подписан на карточке. */
   function offerName(o) {
@@ -308,7 +341,10 @@
     var h = el("h3", "card__title");
     h.id = uid + "-t";
     if (o.bank) {
-      h.appendChild(el("span", "card__bank mono", o.bank));
+      var brand = el("span", "card__brand");
+      brand.appendChild(logoMark(o));
+      brand.appendChild(el("span", "card__bank mono", o.bank));
+      h.appendChild(brand);
       // Пробел между строками нужен вслух: без него имя карточки
       // склеивается в «Т-БанкПлатиновая карта». Визуально он схлопывается.
       h.appendChild(document.createTextNode(" "));

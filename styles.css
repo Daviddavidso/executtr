@@ -910,6 +910,50 @@ a { color: inherit; }
 .card__name { display: block; }
 .card--paused .card__bank { color: var(--muted); }
 
+/* Марка банка: логотип и название в одной строке — как шапка бланка.
+   Логотипы приходят разной формы (широкие надписи и квадратные значки),
+   поэтому фиксируем высоту, а ширину отдаём картинке. */
+.card__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+.card__brand .card__bank { margin-bottom: 0; }
+
+.card__logo,
+.card__mono {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  background: #FFFFFF;
+  border: 1px solid var(--hair);
+  border-radius: 3px;
+}
+/* Плашка одного размера у всех карточек: логотипы приходят и широкой
+   надписью, и квадратным значком, а колонка с названием банка должна
+   начинаться на одной линии. Заодно картинке некуда двигать вёрстку. */
+.card__logo { width: 92px; padding: 5px 8px; }
+.card__logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* Запасной знак, когда файла логотипа нет. */
+.card__mono {
+  width: 34px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+/* На паузе карточка приглушена — цветной логотип не должен оставаться
+   единственным ярким пятном. */
+.card--paused .card__logo img { filter: grayscale(1); opacity: .55; }
+.card--paused .card__mono { color: var(--muted); }
+
 /* Условия — строки спецификации: подпись слева, значение справа, между ними
    точки-выноски. Так карточка читается как страница прайса, а не как сетка
    серых квадратиков. */

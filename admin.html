@@ -8,8 +8,8 @@
 <meta name="theme-color" content="#F6F7F4">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%230A0C0A'/><path d='M11 9h11M11 16h8M11 23h11' stroke='%232FBF63' stroke-width='3' stroke-linecap='round'/></svg>">
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="styles.css?v=18">
-<link rel="stylesheet" href="admin.css?v=18">
+<link rel="stylesheet" href="styles.css?v=19">
+<link rel="stylesheet" href="admin.css?v=19">
 </head>
 <body class="admin-body">
 
@@ -184,8 +184,8 @@
       <p class="section__sub">Выгрузи каталог перед крупными правками — файл можно будет залить обратно.</p>
       <div class="publish-row">
         <button type="button" class="btn btn--line" id="export">Выгрузить JSON</button>
-        <label class="btn btn--line" for="import-file">Загрузить JSON</label>
         <input type="file" id="import-file" accept="application/json,.json" class="vh-file">
+        <label class="btn btn--line" for="import-file">Загрузить JSON</label>
         <button type="button" class="btn btn--line" id="reset">Сбросить черновик</button>
       </div>
     </section>
@@ -238,6 +238,19 @@
         <div class="field">
           <label for="o-cat">Категория <span class="req" aria-hidden="true">*</span></label>
           <select id="o-cat" required aria-required="true"></select>
+        </div>
+
+        <div class="field field--full">
+          <label for="o-logo">Логотип банка</label>
+          <div class="logo-pick">
+            <span class="logo-pick__prev" id="o-logo-prev" aria-hidden="true"></span>
+            <select id="o-logo" aria-describedby="o-logo-hint"></select>
+            <input type="file" id="o-logo-file" class="vh-file"
+                   accept=".png,.svg,.jpg,.jpeg,.webp,image/png,image/svg+xml,image/jpeg,image/webp">
+            <label class="btn btn--line btn--sm" for="o-logo-file">Загрузить свой</label>
+          </div>
+          <p class="hint" id="o-logo-hint">Картинка в карточке рядом с названием банка. Нужного банка нет в списке — загрузи файл: PNG или SVG, лучше с прозрачным фоном, до 150 КБ. Без логотипа карточка покажет первую букву названия банка.</p>
+          <p class="form-status" id="o-logo-status" role="status" aria-live="polite" aria-atomic="true"></p>
         </div>
 
         <div class="field">
@@ -348,7 +361,7 @@
 <p class="vh" id="live" role="status" aria-live="polite" aria-atomic="true"></p>
 <p class="vh" id="live-alert" role="alert" aria-atomic="true"></p>
 
-<script src="data.js?v=18"></script>
-<script src="admin.js?v=18"></script>
+<script src="data.js?v=19"></script>
+<script src="admin.js?v=19"></script>
 </body>
 </html>

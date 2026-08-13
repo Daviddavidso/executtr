@@ -8,6 +8,35 @@
 
   var FILE = window.SITE_DATA || { site: {}, categories: [], offers: [], faq: [] };
 
+  /* Что лежит в папке logos. Список руками: браузер не умеет читать папку
+     на обычном хостинге. Положил новый файл на сервер — допиши строку сюда.
+     Если файла на сервере нет, а логотип нужен, в форме есть «Загрузить свой»:
+     такая картинка уезжает прямо в data.js и сервер для неё не нужен. */
+  var LOGOS = [
+    ["alfa.svg", "Альфа-Банк"],
+    ["bistrodengi.png", "Быстроденьги"],
+    ["ekapusta.png", "еКапуста"],
+    ["gpb.png", "Газпромбанк"],
+    ["moneyman.png", "MoneyMan"],
+    ["ozon.svg", "Озон Банк"],
+    ["sber.svg", "Сбер"],
+    ["sovcom.svg", "Совкомбанк"],
+    ["tbank.svg", "Т-Банк"],
+    ["vtb.svg", "ВТБ"],
+    ["webzaim.png", "Веб-Займ"],
+    ["yandex.svg", "Яндекс Банк"],
+    ["zaymer.png", "Займер"]
+  ];
+
+  var LOGO_MAX = 150 * 1024;   /* больше — раздувает data.js и черновик */
+
+  /* Своя картинка приезжает как data:-строка, файл из папки — по имени. */
+  function logoSrc(v) {
+    v = String(v || "").trim();
+    if (!v) return "";
+    return /^(data:|https?:|\.?\/)/.test(v) ? v : "logos/" + v;
+  }
+
   var $  = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
@@ -489,6 +518,23 @@
     return c ? c.label : "без категории";
   }
 
+  /* Логотип в таблице — подсказка глазами: банк написан рядом текстом,
+     поэтому картинка молчит, а буква-заглушка спрятана от скринридера. */
+  function logoThumb(o) {
+    if (!o.logo) {
+      var m = el("span", "cell-logo cell-logo--mono", String(o.bank || "?").trim().charAt(0).toUpperCase());
+      m.setAttribute("aria-hidden", "true");
+      return m;
+    }
+    var box = el("span", "cell-logo");
+    var img = el("img");
+    img.src = logoSrc(o.logo);
+    img.alt = "";
+    img.loading = "lazy";
+    box.appendChild(img);
+    return box;
+  }
+
   function renderOffers() {
     offerRows.textContent = "";
     var list = visibleOffers();
@@ -505,7 +551,13 @@
       td1.appendChild(el("span", "cell-sub", catLabel(o.cat)));
       tr.appendChild(td1);
 
-      tr.appendChild(el("td", null, o.bank || "—"));
+      var td2 = el("td");
+      var bankCell = el("div", "cell-bank");
+      bankCell.appendChild(logoThumb(o));
+      bankCell.appendChild(el("span", null, o.bank || "—"));
+      td2.appendChild(bankCell);
+      tr.appendChild(td2);
+
       tr.appendChild(el("td", null, o.payout || "—"));
 
       var td4 = el("td");
@@ -773,6 +825,121 @@
     if (e.target.classList.contains("fact-k")) renumberFacts();
   });
 
+  /* ---------- Логотип в форме оффера ---------- */
+
+  var logoSel    = $("#o-logo"),
+      logoPrev   = $("#o-logo-prev"),
+      logoFile   = $("#o-logo-file"),
+      logoStatus = $("#o-logo-status");
+
+  function logoStatusSet(msg, tone) {
+    logoStatus.dataset.tone = tone || "";
+    logoStatus.textContent = msg || "";
+  }
+
+  /* Список файлов плюс, если у оффера свой логотип, отдельный пункт для него:
+     иначе загруженная картинка исчезала бы при повторном открытии формы. */
+  function fillLogoSelect(current) {
+    current = String(current || "").trim();
+    logoSel.textContent = "";
+
+    var none = el("option", null, "Без логотипа — первая буква банка");
+    none.value = "";
+    logoSel.appendChild(none);
+
+    /* Сортируем по названию банка, а не по имени файла: в раскрытом списке
+       работает набор с клавиатуры, и «Сбер» должен стоять между «Озоном» и
+       «Совкомбанком», а не там, где оказалась латиница. */
+    var known = false;
+    LOGOS.slice().sort(function (a, b) { return a[1].localeCompare(b[1], "ru"); })
+      .forEach(function (l) {
+        var o = el("option", null, l[1] + " — " + l[0]);
+        o.value = l[0];
+        logoSel.appendChild(o);
+        if (l[0] === current) known = true;
+      });
+
+    if (current && !known) {
+      var own = el("option", null, /^data:/.test(current) ? "Свой файл" : "Свой файл: " + current);
+      own.value = current;
+      own.dataset.custom = "1";
+      logoSel.appendChild(own);
+    }
+
+    logoSel.value = current;
+    drawLogoPreview();
+  }
+
+  /* Превью — оформление: то же самое написано в выбранном пункте списка,
+     поэтому наружу оно не звучит. */
+  function drawLogoPreview() {
+    logoPrev.textContent = "";
+    logoSel.removeAttribute("aria-invalid");
+    var v = logoSel.value;
+    if (!v) {
+      var bank = $("#o-bank").value.trim();
+      logoPrev.appendChild(el("span", "logo-pick__mono", (bank || "?").charAt(0).toUpperCase()));
+      return;
+    }
+    var img = el("img");
+    img.alt = "";
+    /* Файла на сервере может не быть — тогда показываем букву и говорим
+       об этом прямо в форме: иначе о пустой карточке узнаёшь уже на сайте. */
+    img.addEventListener("error", function () {
+      logoPrev.textContent = "";
+      logoPrev.appendChild(el("span", "logo-pick__mono", "?"));
+      logoSel.setAttribute("aria-invalid", "true");
+      logoStatusSet("Файла " + logoSrc(v) + " нет на сервере. Залей его в папку logos/ " +
+                    "или выбери другой логотип — иначе в карточке будет буква.", "bad");
+    });
+    img.src = logoSrc(v);
+    logoPrev.appendChild(img);
+  }
+
+  logoSel.addEventListener("change", function () {
+    drawLogoPreview();
+    logoStatusSet("");
+  });
+
+  /* Пока логотип не выбран, в превью стоит буква банка — она должна меняться
+     вместе с полем «Банк», иначе там висит буква от прошлого оффера. */
+  $("#o-bank").addEventListener("input", function () {
+    if (!logoSel.value) drawLogoPreview();
+  });
+
+  logoFile.addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    this.value = "";   /* иначе тот же файл второй раз не выбрать */
+    if (!f) return;
+
+    if (!/^image\/(png|svg\+xml|jpeg|webp)$/.test(f.type)) {
+      logoStatusSet("Такой файл не подойдёт. Нужен PNG, SVG, JPG или WEBP.", "bad");
+      return;
+    }
+    if (f.size > LOGO_MAX) {
+      logoStatusSet("Файл весит " + Math.round(f.size / 1024) + " КБ — это много. Сожми картинку до 150 КБ: " +
+                    "логотип хранится прямо в каталоге и утяжеляет сайт.", "bad");
+      return;
+    }
+
+    var r = new FileReader();
+    r.onload = function () {
+      var own = logoSel.querySelector("option[data-custom]");
+      if (!own) {
+        own = el("option");
+        own.dataset.custom = "1";
+        logoSel.appendChild(own);
+      }
+      own.textContent = "Свой файл: " + f.name;
+      own.value = String(r.result);
+      logoSel.value = own.value;
+      drawLogoPreview();
+      logoStatusSet("Логотип «" + f.name + "» загружен. Он сохранится вместе с оффером.", "ok");
+    };
+    r.onerror = function () { logoStatusSet("Файл не прочитался. Попробуй другой.", "bad"); };
+    r.readAsDataURL(f);
+  });
+
   function openOfferDialog(offer) {
     editing = offer || null;
     offerOpener = document.activeElement;
@@ -787,6 +954,8 @@
     $("#o-badge").value   = offer ? (offer.badge || "") : "";
     $("#o-url").value     = offer ? (offer.url || "") : "";
     $("#o-note").value    = offer ? (offer.note || "") : "";
+    fillLogoSelect(offer ? (offer.logo || "") : "");
+    logoStatusSet("");
     fillFacts(offer);
     $("#o-active").checked = offer ? offer.active !== false : true;
     setActiveState();
@@ -879,6 +1048,7 @@
       title:  title,
       cat:    $("#o-cat").value,
       bank:   $("#o-bank").value.trim(),
+      logo:   logoSel.value,
       payout: $("#o-payout").value.trim(),
       payFor: $("#o-payfor").value.trim(),
       facts:  collectFacts(),
@@ -888,11 +1058,15 @@
       active: $("#o-active").checked
     };
 
+    // Пустой логотип в файле не нужен: карточка и без ключа рисует букву.
+    if (!data.logo) delete data.logo;
+
     if (editing) {
       // Поля прежней версии (ГЕО, модель, холд, источники) переехали в
       // «условия», поэтому при сохранении убираем их, чтобы они не тянулись
       // в опубликованный data.js.
       ["geo", "model", "hold", "sources"].forEach(function (k) { delete editing[k]; });
+      if (!data.logo) delete editing.logo;
       Object.keys(data).forEach(function (k) { editing[k] = data[k]; });
       say("Оффер «" + title + "» изменён");
     } else {
