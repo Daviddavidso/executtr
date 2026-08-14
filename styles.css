@@ -277,6 +277,23 @@ a { color: inherit; }
   .brand__sub { font-size: 10.5px; }
 }
 
+/* Совсем узкие экраны (320 и меньше: SE первого поколения, раскладушки).
+   Логотип с подписью и кнопка меню там вместе не помещаются, и кнопку
+   срезало правым краем вместе с отступом. Подпись под названием повторена
+   на первом экране, поэтому убираем её, а у кнопки прячем слово — иконка
+   остаётся, а имя кнопки для голосовых программ никуда не девается. */
+@media (max-width: 359.98px) {
+  .brand__sub { display: none; }
+  .burger { padding-inline: 12px; gap: 0; }
+  .burger__label {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0; border: 0;
+    clip-path: inset(50%);
+    overflow: hidden; white-space: nowrap;
+  }
+}
+
 /* Навигация — десктоп */
 .masthead__nav { display: none; }
 
@@ -307,8 +324,11 @@ a { color: inherit; }
     background: var(--green-deep);
     transition: right .22s var(--ease);
   }
-  .masthead__nav a:hover { color: var(--ink); }
-  .masthead__nav a:hover::after { right: 0; }
+  /* :not(.btn) обязателен. Кнопка в шапке — тоже ссылка внутри навигации,
+     и без исключения это правило перекрашивало её текст в цвет чернил
+     поверх чёрного фона: на наведении надпись просто пропадала. */
+  .masthead__nav a:not(.btn):hover { color: var(--ink); }
+  .masthead__nav a:not(.btn):hover::after { right: 0; }
   /* Кнопка внутри навигации — свои цвета, подчёркивание ей не нужно.
      Отступы возвращаем руками: правило .masthead__nav a выше обнуляет
      боковые поля, и текст упирался в края кнопки. */
@@ -585,7 +605,10 @@ a { color: inherit; }
 .hero__inner { position: relative; z-index: 1; }
 
 .hero__title {
-  font-size: clamp(42px, 13.4vw, 116px);
+  /* Нижняя граница 38, а не 42: между «Выбирай» и «и» стоит неразрывный
+     пробел, строка не переносится, и на узких экранах (складные, 280px)
+     кегль 42 вылезал бы за край. */
+  font-size: clamp(38px, 13.4vw, 116px);
   font-weight: 900;
   letter-spacing: -0.055em;
   /* Не плотнее 1.08: зелёное пятно вылезает на 0.1em выше своей строки
