@@ -172,6 +172,10 @@ a { color: inherit; }
 
 .btn--ink   { --btn-bg: var(--ink); --btn-fg: #fff; --btn-bd: var(--ink); }
 .btn--ink:hover { --btn-bg: #1E241E; --btn-bd: #1E241E; }
+/* Кнопка в шапке цвет на наведении не меняет: осветлённый чёрный на светлой
+   шапке читался как выключенная кнопка. Отклик даёт подъём из .btn:hover.
+   Правило стоит вне медиазапросов — оно нужно на любой ширине. */
+.masthead__cta:hover { --btn-bg: var(--ink); --btn-bd: var(--ink); }
 
 .btn--green { --btn-bg: var(--green-deep); --btn-fg: #fff; --btn-bd: var(--green-deep); }
 .btn--green:hover { --btn-bg: #0E6E34; --btn-bd: #0E6E34; }
@@ -305,8 +309,10 @@ a { color: inherit; }
   }
   .masthead__nav a:hover { color: var(--ink); }
   .masthead__nav a:hover::after { right: 0; }
-  /* Кнопка внутри навигации — свои цвета, подчёркивание ей не нужно */
-  .masthead__nav .btn { color: var(--btn-fg); font-weight: 600; }
+  /* Кнопка внутри навигации — свои цвета, подчёркивание ей не нужно.
+     Отступы возвращаем руками: правило .masthead__nav a выше обнуляет
+     боковые поля, и текст упирался в края кнопки. */
+  .masthead__nav .btn { color: var(--btn-fg); font-weight: 600; padding: 12px 26px; }
   .masthead__cta { flex: 0 0 auto; }
   .masthead__cta::after { display: none; }
 }
@@ -582,7 +588,10 @@ a { color: inherit; }
   font-size: clamp(42px, 13.4vw, 116px);
   font-weight: 900;
   letter-spacing: -0.055em;
-  line-height: .94;
+  /* Не плотнее 1.08: зелёное пятно вылезает на 0.1em выше своей строки
+     (см. .hero__hl::before) и при плотном интерлиньяже упирается в строку
+     сверху. Это одинаково важно и на телефоне, и на большом экране. */
+  line-height: 1.08;
   text-transform: uppercase;
   margin-bottom: 26px;
 }
@@ -743,6 +752,9 @@ a { color: inherit; }
   scroll-snap-type: x proximity;
   margin: -9px -18px 0;
   padding: 9px 18px;
+  /* Без этого прилипание считает краем ленты сам край экрана, а не отступ:
+     на телефоне первая кнопка вставала вплотную к краю и обрезалась. */
+  scroll-padding-inline: 18px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -939,8 +951,10 @@ a { color: inherit; }
      ограничение (значок 180×180 вписывается в квадрат по высоте плашки),
      а широкие надписи упираются в ширину и лишнюю высоту просто не берут. */
   height: 96px;
-  width: min(240px, 100%);
-  max-width: 100%;
+  /* Плашка во всю ширину карточки: логотип внутри стоит по центру, и ряд
+     карточек читается ровно. Плашка уже карточки оставляла справа пустое
+     поле, и логотип выглядел сдвинутым влево. */
+  width: 100%;
   overflow: hidden;
   background: #FFFFFF;
   border: 1px solid var(--hair);
