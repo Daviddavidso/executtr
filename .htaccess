@@ -1,3 +1,10 @@
+# Редирект с http на https создан автоматически при заказе бесплатного
+# ssl-сертификата reg.ru. Наш файл перезаписывает серверный, поэтому редирект
+# перенесён сюда — без него сайт открывался бы и по http.
+RewriteEngine On
+RewriteCond %{SERVER_PORT} !^443$
+RewriteRule .* https://%{SERVER_NAME}%{REQUEST_URI} [R,L]
+
 # Закрываем служебные файлы от чужих глаз.
 <FilesMatch "^(config\.php|leads\.csv|\.tokens|data\.backup\.js)$">
   Require all denied
