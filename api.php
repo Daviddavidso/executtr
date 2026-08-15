@@ -31,6 +31,16 @@ $CONFIG     = $ROOT . '/config.php';
 $LEADS_FILE = $ROOT . '/leads.csv';
 $TOKENS     = $ROOT . '/.tokens';
 
+/* Копия каталога лежит НАД корнем сайта, и это принципиально.
+   На шаред-хостингах (reg.ru, Beget) статику раздаёт nginx, не заглядывая
+   в .htaccess: запрет из него работает для php и csv, а .js-файл отдаётся
+   как есть. Лежи копия рядом с сайтом — её открыл бы любой по прямой
+   ссылке вместе с внутренними полями выплат.
+   Если папка выше корня недоступна на запись, копия просто не создаётся:
+   для этого ниже стоит @copy и проверка is_writable. */
+$BACKUP_FILE = dirname($ROOT) . '/data.backup.js';
+if (!is_writable(dirname($ROOT))) $BACKUP_FILE = null;
+
 $cfg = ['password' => DEFAULT_PASSWORD, 'sheet_url' => '', 'salt' => 'executtr-salt'];
 if (is_file($CONFIG)) {
     $loaded = include $CONFIG;
@@ -128,7 +138,7 @@ if ($action === 'save') {
          . "window.SITE_DATA = " . $json . ";\n";
 
     // Бэкап предыдущей версии — на случай, если что-то улетело не то.
-    if (is_file($DATA_FILE)) @copy($DATA_FILE, $ROOT . '/data.backup.js');
+    if ($BACKUP_FILE && is_file($DATA_FILE)) @copy($DATA_FILE, $BACKUP_FILE);
 
     $tmp = $DATA_FILE . '.tmp';
     if (file_put_contents($tmp, $out, LOCK_EX) === false || !@rename($tmp, $DATA_FILE)) {
