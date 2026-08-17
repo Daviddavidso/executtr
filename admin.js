@@ -151,7 +151,24 @@
     $("#main").hidden = false;
     renderAll();
     ping();
+    loadFullCatalog();
     refreshPreview();
+  }
+
+  /* В data.js, который лежит на сайте, выплат нет — их оттуда специально
+     вырезают при публикации. Полный каталог отдаёт сервер по паролю, его и
+     берём за основу. Черновик при этом главнее: в нём несохранённые правки. */
+  function loadFullCatalog() {
+    api("catalog").then(function (res) {
+      if (!res || !res.ok || !res.data || !Array.isArray(res.data.offers)) return;
+      FILE = res.data;
+      if (dirty) return;   // человек уже что-то правил — не затираем
+      var draft = null;
+      try { draft = localStorage.getItem(DRAFT_KEY); } catch (e) { /* нет доступа */ }
+      if (draft) return;
+      DATA = clone(FILE);
+      renderAll();
+    }).catch(function () { /* офлайн — работаем с тем, что в data.js */ });
   }
 
   /* Экран входа перекрывает редактор картинкой, но сам по себе его не
@@ -1231,6 +1248,110 @@
     r.onerror = function () { shout("Файл не прочитан. Каталог не изменён."); };
     r.readAsText(f);
     this.value = "";
+  });
+
+  /* ---------- Смена пароля ---------- */
+
+  var passForm = $("#pass-form"), passStatus = $("#pass-status");
+
+  /* #pass-status — живая область, поэтому текст сюда пишем только тогда,
+     когда фокус никуда не уезжает. Уехал фокус — читается то, куда он
+     приехал, и вторая фраза здесь наложилась бы на первую. */
+  function passState(msg, tone) {
+    passStatus.dataset.tone = tone || "";
+    passStatus.textContent = msg || "";
+  }
+
+  function showPassErrors(errs) {
+    var box = $("#pass-errs"), list = $("#pass-err-list");
+    box.querySelector("h3").textContent = errs.length === 1
+      ? "В форме одна ошибка"
+      : "В форме " + errs.length + " " + plural(errs.length, "ошибка", "ошибки", "ошибок");
+    list.textContent = "";
+    errs.forEach(function (pair) {
+      var li = el("li"), a = el("a", null, pair[1]);
+      a.href = "#" + pair[0];
+      a.addEventListener("click", function (ev) { ev.preventDefault(); $("#" + pair[0]).focus(); });
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+    passState("");
+    box.hidden = false;
+    box.focus();
+  }
+
+  /* Галочка объявляет своё состояние сама, поэтому вслух тут ничего не
+     говорим. Каретку сохраняем руками: смена type её сбрасывает в конец,
+     и человек, который правил середину пароля, теряет место. */
+  $("#p-show").addEventListener("change", function () {
+    var show = this.checked;
+    ["#p-old", "#p-new", "#p-new2"].forEach(function (s) {
+      var i = $(s), a = i.selectionStart, b = i.selectionEnd, focused = document.activeElement === i;
+      i.type = show ? "text" : "password";
+      if (focused) { try { i.setSelectionRange(a, b); } catch (e) { /* поле не даёт */ } }
+    });
+  });
+
+  passForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    var errs = [];
+    ["#p-old", "#p-new", "#p-new2"].forEach(function (s) { fieldErr(s, null); });
+    passState("");
+
+    var old = $("#p-old").value, nw = $("#p-new").value, nw2 = $("#p-new2").value;
+
+    if (!old) { fieldErr("#p-old", "Без текущего пароля сменить нельзя."); errs.push(["p-old", "Текущий пароль не введён"]); }
+    if (nw.length < 8) { fieldErr("#p-new", "Нужно хотя бы 8 символов, сейчас " + nw.length + "."); errs.push(["p-new", "Новый пароль короче 8 символов"]); }
+    else if (nw !== nw2) { fieldErr("#p-new2", "Второй пароль отличается от первого. Введи один и тот же."); errs.push(["p-new2", "Пароли не совпадают"]); }
+
+    /* Один список ошибок на все случаи, и клиентские, и серверные: две
+       разные точки приземления фокуса на одну кнопку сбивают с толку. */
+    if (errs.length) { showPassErrors(errs); return; }
+    $("#pass-errs").hidden = true;
+
+    if (!online) {
+      passState("Пароль меняется на сервере, а сейчас связи с ним нет. Открой админку на своём сайте.", "info");
+      return;
+    }
+
+    var btn = this.querySelector('button[type="submit"]');
+    btn.setAttribute("aria-disabled", "true");
+    var lbl = btn.textContent;
+    btn.textContent = "Меняем…";
+
+    api("password", { old: old, new: nw })
+      .then(function (res) {
+        if (res && res.ok) {
+          /* Сервер закрыл все прежние сессии и выдал новый токен — кладём
+             его на место старого, иначе следующая же публикация упрётся
+             в «сессия истекла». */
+          if (res.token) {
+            token = res.token;
+            try { sessionStorage.setItem(TOKEN_KEY, token); } catch (err) { /* приватный режим */ }
+          }
+          passForm.reset();
+          $("#p-show").checked = false;
+          ["#p-old", "#p-new", "#p-new2"].forEach(function (s) { $(s).type = "password"; });
+          /* Фокус остаётся на кнопке — читается только эта строка. */
+          passState("Готово. Пароль изменён — следующий вход уже с новым.", "ok");
+        } else {
+          /* Сервер говорит, какое поле не подошло. Показываем ошибку там же,
+             а фокус уводим в общий список — как и при своей проверке. */
+          var msg = (res && res.error) || "Не получилось сменить пароль";
+          var isNew = res && res.field === "new";
+          fieldErr(isNew ? "#p-new" : "#p-old", msg);
+          if (!isNew) $("#p-old").value = "";   // новый пароль набран верно, стирать его незачем
+          showPassErrors([[isNew ? "p-new" : "p-old", msg.replace(/\.$/, "")]]);
+        }
+      })
+      .catch(function () {
+        passState("Сервер не ответил. Пароль не изменён — попробуй ещё раз.", "bad");
+      })
+      .then(function () {
+        btn.removeAttribute("aria-disabled");
+        btn.textContent = lbl;
+      });
   });
 
   $("#reset").addEventListener("click", function () {

@@ -1406,6 +1406,15 @@ a { color: inherit; }
 .error-summary ul { list-style: disc; padding-left: 20px; }
 .error-summary li + li { margin-top: 5px; }
 .error-summary a { color: #8C1D18; font-weight: 600; }
+/* Список ошибок получает фокус программно. Обычное правило рисует кольцо
+   только на :focus-visible, а после клика мышью его нет — и человек не
+   понимает, куда его перебросило. Здесь кольцо нужно всегда.
+   Отступ сверху — чтобы список не уехал под липкую шапку. */
+.error-summary:focus {
+  outline: 3px solid #8C1D18;
+  outline-offset: 3px;
+}
+.error-summary { scroll-margin-top: calc(var(--header-h) + 16px); }
 
 /* Ловушка для ботов */
 .hp {

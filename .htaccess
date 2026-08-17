@@ -5,8 +5,11 @@ RewriteEngine On
 RewriteCond %{SERVER_PORT} !^443$
 RewriteRule .* https://%{SERVER_NAME}%{REQUEST_URI} [R,L]
 
-# Закрываем служебные файлы от чужих глаз.
-<FilesMatch "^(config\.php|leads\.csv|\.tokens|data\.backup\.js)$">
+# Закрываем служебные файлы от чужих глаз. Основная защита не здесь:
+# рабочие файлы лежат над корнем сайта, куда веб-сервер не ходит вовсе
+# (nginx на шаред-хостинге раздаёт статику мимо .htaccess). Это второй рубеж
+# на случай, если файл всё-таки окажется рядом с сайтом.
+<FilesMatch "^(config\.php|leads\.csv|\.tokens|\.login-attempts|data\.backup\.js|data\.full\.json)$">
   Require all denied
 </FilesMatch>
 
@@ -23,6 +26,23 @@ RewriteRule .* https://%{SERVER_NAME}%{REQUEST_URI} [R,L]
   <FilesMatch "admin\.html$">
     Header set X-Robots-Tag "noindex, nofollow"
   </FilesMatch>
+</IfModule>
+
+# Заголовки безопасности.
+<IfModule mod_headers.c>
+  # Браузер не должен угадывать тип файла: подсунутый под видом картинки
+  # скрипт не выполнится.
+  Header always set X-Content-Type-Options "nosniff"
+  # Чужой сайт не сможет спрятать нашу страницу в невидимый iframe и ловить
+  # на ней клики. SAMEORIGIN, а не DENY: админка сама показывает витрину
+  # в рамке предпросмотра.
+  Header always set X-Frame-Options "SAMEORIGIN"
+  # На чужие адреса уходит только домен, без пути: партнёрским ссылкам
+  # источник нужен, а знать конкретную страницу им незачем.
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  # Ничего из этого сайту не нужно, а спросить у посетителя могла бы
+  # только чужая врезка.
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
 </IfModule>
 
 # Пока у витрины нет своего домена, она живёт подпапкой на чужом хостинге.
