@@ -56,6 +56,7 @@ $LEADS_FILE  = $PRIV . '/leads.csv';
 $TOKENS      = $PRIV . '/.tokens';
 $ATTEMPTS    = $PRIV . '/.login-attempts';
 $TG_CHATS    = $PRIV . '/.tg-chats.json';   // кому слать заявки в телеграм
+$TG_OFFSET   = $PRIV . '/.tg-offset';        // на чём остановился опрос бота
 
 /* Переезд со старых мест: файлы могли лежать в корне сайта. */
 foreach ([['/leads.csv', $LEADS_FILE], ['/.tokens', $TOKENS], ['/data.backup.js', $BACKUP_FILE]] as $m) {
@@ -258,11 +259,78 @@ function tg_esc(string $s): string {
     return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+
+/* Опрос бота вместо вебхука.
+
+   Вебхук на этом хостинге не работает: телеграм не может достучаться до
+   сервера («Connection timed out»), обновления копятся у них в очереди.
+   Поэтому ходим за ними сами — наружу сервер ходит нормально.
+
+   Опрос дёргается в моменты, когда мы и так что-то делаем: открылась
+   админка (ping) и пришла заявка. Этого достаточно: нужно всего лишь
+   заметить, что человек нажал «Старт». */
+function tg_poll(string $token, string $chatsFile, string $offsetFile): int {
+    if ($token === '' || !function_exists('curl_init')) return 0;
+
+    $offset = is_file($offsetFile) ? (int)file_get_contents($offsetFile) : 0;
+    $url = 'https://api.telegram.org/bot' . $token . '/getUpdates?timeout=0&allowed_updates=%5B%22message%22%5D'
+         . ($offset ? '&offset=' . $offset : '');
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 8]);
+    $body = (string)curl_exec($ch);
+    curl_close($ch);
+
+    $j = json_decode($body, true);
+    if (!is_array($j) || empty($j['ok']) || empty($j['result'])) return 0;
+
+    $list    = tg_chats($chatsFile);
+    $changed = 0;
+    $last    = $offset;
+
+    foreach ($j['result'] as $u) {
+        $last = max($last, (int)($u['update_id'] ?? 0) + 1);
+        $msg  = $u['message'] ?? null;
+        $chat = is_array($msg) ? ($msg['chat'] ?? null) : null;
+        if (!is_array($chat) || ($chat['type'] ?? '') !== 'private') continue;
+
+        $id    = (string)($chat['id'] ?? '');
+        if ($id === '') continue;
+        $text  = mb_strtolower(trim((string)($msg['text'] ?? '')));
+        $title = trim(((string)($chat['first_name'] ?? '')) . ' ' . ((string)($chat['last_name'] ?? '')));
+        if (($chat['username'] ?? '') !== '') $title .= ' (@' . $chat['username'] . ')';
+
+        if ($text === '/stop' || $text === 'стоп') {
+            if (isset($list[$id])) { unset($list[$id]); $changed++; }
+            tg_api($token, 'sendMessage', [
+                'chat_id' => $id,
+                'text'    => "Отключил. Заявки сюда больше не приходят.\nЧтобы вернуть — напиши /start.",
+            ]);
+        } else {
+            $first = !isset($list[$id]);
+            $list[$id] = ['title' => trim($title), 'since' => date('c')];
+            $changed++;
+            tg_api($token, 'sendMessage', [
+                'chat_id'    => $id,
+                'parse_mode' => 'HTML',
+                'text'       => $first
+                    ? "✅ <b>Готово, всё подключено.</b>\n\nТеперь каждая заявка с сайта падает сюда: имя, контакт, что человеку нужно и когда он оставил заявку. Под заявкой будет кнопка, чтобы написать ему в один тап.\n\nСайт: cashmachine-store.ru\nОтключить уведомления — команда /stop."
+                    : "Всё уже подключено — заявки приходят сюда. Отключить: /stop.",
+            ]);
+        }
+    }
+
+    if ($changed) tg_chats_save($chatsFile, $list);
+    if ($last > $offset) { @file_put_contents($offsetFile, (string)$last, LOCK_EX); @chmod($offsetFile, 0600); }
+    return $changed;
+}
+
 /* ---------- Действия ---------- */
 
 $action = $_GET['action'] ?? (body()['action'] ?? '');
 
 if ($action === 'ping') {
+    tg_poll((string)($cfg['tg_token'] ?? ''), $TG_CHATS, $TG_OFFSET);
     out([
         'ok'       => true,
         'writable' => is_writable($DATA_FILE) || is_writable($ROOT),
@@ -497,6 +565,7 @@ if ($action === 'lead') {
        а сервер живёт по своему часовому поясу. */
     $tgOk = null;
     $token = (string)($cfg['tg_token'] ?? '');
+    if ($token !== '') tg_poll($token, $TG_CHATS, $TG_OFFSET);
     $chats = $token !== '' ? tg_chats($TG_CHATS) : [];
     if ($chats) {
         try {
