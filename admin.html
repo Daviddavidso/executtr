@@ -8,8 +8,8 @@
 <meta name="theme-color" content="#F6F7F4">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%230A0C0A'/><path d='M11 9h11M11 16h8M11 23h11' stroke='%232FBF63' stroke-width='3' stroke-linecap='round'/></svg>">
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="styles.css?v=24">
-<link rel="stylesheet" href="admin.css?v=24">
+<link rel="stylesheet" href="styles.css?v=25">
+<link rel="stylesheet" href="admin.css?v=25">
 </head>
 <body class="admin-body">
 
@@ -77,17 +77,17 @@
 
     <div class="admin-intro">
       <h1 class="admin-h1">Редактор витрины</h1>
-      <p class="section__sub">Правки живут черновиком в этом браузере. На сайт они попадут после кнопки «Опубликовать».</p>
+      <p class="section__sub">Правки живут черновиком в этом браузере. На сайт они попадут после кнопки «Сохранить».</p>
     </div>
 
-    <!-- Публикация -->
+    <!-- Сохранение на сайт -->
     <section class="panel panel--publish" aria-labelledby="pub-h">
       <div class="panel__head">
-        <h2 id="pub-h">Публикация</h2>
+        <h2 id="pub-h">Сохранение</h2>
         <p class="conn mono" id="conn" role="status" aria-live="polite" aria-atomic="true"></p>
       </div>
       <div class="publish-row">
-        <button type="button" class="btn btn--ink btn--lg" id="publish">Опубликовать на сайте</button>
+        <button type="button" class="btn btn--ink btn--lg" id="publish">Сохранить</button>
         <button type="button" class="btn btn--line" id="download">Скачать data.js</button>
         <span class="publish-dirty mono" id="dirty" hidden>есть несохранённые правки</span>
       </div>
@@ -116,7 +116,7 @@
           <p class="hint" id="s-tg-hint">Пусто — кнопки «Написать в Telegram» на сайте не будет.</p>
         </div>
         <div class="field field--full">
-          <button type="submit" class="btn btn--line">Сохранить в черновик</button>
+          <button type="submit" class="btn btn--line">Применить</button>
         </div>
       </form>
     </section>
@@ -257,7 +257,7 @@
         <h2 id="prev-h">Предпросмотр</h2>
         <button type="button" class="btn btn--line btn--sm" id="prev-refresh">Обновить</button>
       </div>
-      <p class="hint">Так витрина выглядит с черновиком. На сайте изменения появятся после публикации.</p>
+      <p class="hint">Так витрина выглядит с черновиком. На сайте изменения появятся после сохранения.</p>
       <div class="preview__frame">
         <iframe id="prev-frame" title="Предпросмотр витрины с черновиком" src="./?draft=1" loading="lazy"></iframe>
       </div>
@@ -428,7 +428,7 @@
 <p class="vh" id="live" role="status" aria-live="polite" aria-atomic="true"></p>
 <p class="vh" id="live-alert" role="alert" aria-atomic="true"></p>
 
-<script src="data.js?v=24"></script>
-<script src="admin.js?v=24"></script>
+<script src="data.js?v=25"></script>
+<script src="admin.js?v=25"></script>
 </body>
 </html>

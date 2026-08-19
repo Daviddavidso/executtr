@@ -215,7 +215,7 @@
       })
       .catch(function () {
         online = false;
-        setConn("off", "офлайн — публикация недоступна");
+        setConn("off", "офлайн — сохранить на сайт нельзя");
         return null;
       });
   }
@@ -1406,25 +1406,25 @@
     persist();
 
     if (!online) {
-      pubStatus("Публикация работает только там, где есть PHP. Здесь правки живут в браузере — " +
+      pubStatus("Сохранить на сайт можно только там, где есть PHP. Здесь правки живут в браузере — " +
         "нажми «Скачать data.js» и залей файл на хостинг вручную.", "info");
       return;
     }
 
     btn.setAttribute("aria-disabled", "true");
     var lbl = btn.textContent;
-    btn.textContent = "Публикуем…";
-    pubStatus("Публикуем изменения…", "");
+    btn.textContent = "Сохраняем…";
+    pubStatus("Сохраняем изменения на сайт…", "");
 
     api("save", { data: DATA })
       .then(function (res) {
         if (res && res.ok) {
           setDirty(false);
-          pubStatus("Готово. Витрина обновлена — можно открывать сайт и проверять.", "ok");
-          say("Изменения опубликованы");
+          pubStatus("Сохранено. Витрина обновлена — можно открывать сайт и проверять.", "ok");
+          say("Изменения сохранены на сайте");
         } else if (res && res.error && /Сессия/.test(res.error)) {
           // Черновик уже в localStorage, поэтому ничего не теряем.
-          pubStatus("Сессия истекла. Введи пароль ещё раз — черновик сохранён, публикацию повторим.", "bad");
+          pubStatus("Сессия истекла. Введи пароль ещё раз — черновик цел, сохранение повторим.", "bad");
           token = "";
           try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* ок */ }
           lockApp();
@@ -1435,7 +1435,7 @@
       .catch(function (err) {
         pubStatus("Не удалось опубликовать: " + (err.message || "сервер не ответил") +
           ". Черновик цел — попробуй ещё раз или скачай data.js и залей вручную.", "bad");
-        shout("Опубликовать не удалось");
+        shout("Сохранить не удалось");
       })
       .then(function () {
         btn.removeAttribute("aria-disabled");
@@ -1596,7 +1596,7 @@
   });
 
   $("#reset").addEventListener("click", function () {
-    if (!window.confirm("Сбросить черновик и вернуться к тому, что сейчас опубликовано на сайте?")) return;
+    if (!window.confirm("Сбросить черновик и вернуться к тому, что сейчас сохранено на сайте?")) return;
     try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ок */ }
     DATA = clone(FILE);
     setDirty(false);
