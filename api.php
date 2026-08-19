@@ -6,7 +6,10 @@
     GET  ?action=ping    — проверка, что бэкенд жив
     POST action=login    — вход в админку (отдаёт токен на 12 часов)
     POST action=save     — перезаписывает data.js каталогом из админки
-    POST action=lead     — принимает заявку с сайта, кладёт в CSV и шлёт в Google-таблицу
+    POST action=lead     — принимает заявку с сайта: пишет в CSV, шлёт в телеграм и в Google-таблицу
+    POST action=password — смена пароля админки (нужен токен сессии)
+    POST action=catalog  — отдаёт админке каталог с выплатами (нужен токен)
+    POST action=tg       — сюда стучится телеграм-бот, когда ему пишут
 
   Пароль админки лежит в config.php рядом. Если файла нет — берётся значение по умолчанию.
 */
@@ -52,6 +55,7 @@ $FULL_FILE   = $PRIV . '/data.full.json';   // каталог с выплата�
 $LEADS_FILE  = $PRIV . '/leads.csv';
 $TOKENS      = $PRIV . '/.tokens';
 $ATTEMPTS    = $PRIV . '/.login-attempts';
+$TG_CHATS    = $PRIV . '/.tg-chats.json';   // кому слать заявки в телеграм
 
 /* Переезд со старых мест: файлы могли лежать в корне сайта. */
 foreach ([['/leads.csv', $LEADS_FILE], ['/.tokens', $TOKENS], ['/data.backup.js', $BACKUP_FILE]] as $m) {
@@ -59,7 +63,8 @@ foreach ([['/leads.csv', $LEADS_FILE], ['/.tokens', $TOKENS], ['/data.backup.js'
     if ($old !== $m[1] && is_file($old) && !is_file($m[1])) @rename($old, $m[1]);
 }
 
-$cfg = ['password' => DEFAULT_PASSWORD, 'password_hash' => '', 'sheet_url' => '', 'salt' => 'executtr-salt'];
+$cfg = ['password' => DEFAULT_PASSWORD, 'password_hash' => '', 'sheet_url' => '',
+        'tg_token' => '', 'tg_secret' => '', 'salt' => 'executtr-salt'];
 if (is_file($CONFIG)) {
     $loaded = include $CONFIG;
     if (is_array($loaded)) $cfg = array_merge($cfg, $loaded);
@@ -77,8 +82,12 @@ function password_ok(array $cfg, string $pass): bool {
 }
 
 function config_write(string $file, array $cfg): bool {
-    $hash  = var_export((string)($cfg['password_hash'] ?? ''), true);
-    $sheet = var_export((string)($cfg['sheet_url'] ?? ''), true);
+    /* Пишем все известные ключи разом: если забыть здесь любой из них,
+       он пропадёт из файла при первой же смене пароля. */
+    $hash   = var_export((string)($cfg['password_hash'] ?? ''), true);
+    $sheet  = var_export((string)($cfg['sheet_url'] ?? ''), true);
+    $tgTok  = var_export((string)($cfg['tg_token'] ?? ''), true);
+    $tgSec  = var_export((string)($cfg['tg_secret'] ?? ''), true);
     $php = "<?php\n"
          . "/*\n"
          . "  Настройки бэкенда. Пароль от админки здесь не хранится открытым:\n"
@@ -89,10 +98,14 @@ function config_write(string $file, array $cfg): bool {
          . "  войди с ним и сразу смени в админке на постоянный.\n"
          . "\n"
          . "  sheet_url — адрес веб-приложения Google Apps Script для заявок.\n"
+         . "  tg_token  — токен телеграм-бота, в него уходят заявки.\n"
+         . "  tg_secret — пароль вебхука: с ним телеграм стучится на api.php.\n"
          . "*/\n\n"
          . "return [\n"
          . "    'password_hash' => $hash,\n"
          . "    'sheet_url'     => $sheet,\n"
+         . "    'tg_token'      => $tgTok,\n"
+         . "    'tg_secret'     => $tgSec,\n"
          . "];\n";
     $tmp = $file . '.tmp';
     if (@file_put_contents($tmp, $php, LOCK_EX) === false) return false;
@@ -209,6 +222,42 @@ function token_from_request(): string {
     return isset($b['token']) ? (string)$b['token'] : '';
 }
 
+
+/* ---------- Телеграм ---------- */
+
+function tg_api(string $token, string $method, array $payload): array {
+    if ($token === '' || !function_exists('curl_init')) return ['code' => 0, 'body' => ''];
+    $ch = curl_init('https://api.telegram.org/bot' . $token . '/' . $method);
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 8,
+    ]);
+    $body = (string)curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return ['code' => $code, 'body' => $body];
+}
+
+/* Кому слать. Список ведёт сам бот: человек нажал «Старт» — попал сюда,
+   отправил «стоп» — вышел. Никаких chat_id руками в настройках. */
+function tg_chats(string $file): array {
+    if (!is_file($file)) return [];
+    $j = json_decode((string)file_get_contents($file), true);
+    return is_array($j) ? $j : [];
+}
+
+function tg_chats_save(string $file, array $list): void {
+    @file_put_contents($file, json_encode($list, JSON_UNESCAPED_UNICODE), LOCK_EX);
+    @chmod($file, 0600);
+}
+
+function tg_esc(string $s): string {
+    return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
 /* ---------- Действия ---------- */
 
 $action = $_GET['action'] ?? (body()['action'] ?? '');
@@ -295,6 +344,52 @@ if ($action === 'catalog') {
     }
     $j = json_decode((string)file_get_contents($FULL_FILE), true);
     out(['ok' => true, 'data' => is_array($j) ? $j : null]);
+}
+
+
+/* Телеграм стучится сюда сам, когда человек пишет боту. Задача одна:
+   запомнить, кому слать заявки. Никаких chat_id руками — нажал «Старт»,
+   и всё. Секрет в заголовке проверяем обязательно: адрес api.php публичный,
+   и без проверки сюда мог бы написать кто угодно. */
+if ($action === 'tg') {
+    $secret = (string)($cfg['tg_secret'] ?? '');
+    $got    = (string)($_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '');
+    if ($secret === '' || !hash_equals($secret, $got)) out(['ok' => false], 403);
+
+    $u   = body();
+    $msg = $u['message'] ?? $u['edited_message'] ?? null;
+    $chat = is_array($msg) ? ($msg['chat'] ?? null) : null;
+
+    if (is_array($chat) && ($chat['type'] ?? '') === 'private') {
+        $id    = (string)($chat['id'] ?? '');
+        $text  = mb_strtolower(trim((string)($msg['text'] ?? '')));
+        $title = trim(((string)($chat['first_name'] ?? '')) . ' ' . ((string)($chat['last_name'] ?? '')));
+        if (($chat['username'] ?? '') !== '') $title .= ' (@' . $chat['username'] . ')';
+
+        $list  = tg_chats($TG_CHATS);
+        $token = (string)($cfg['tg_token'] ?? '');
+
+        if ($text === '/stop' || $text === 'стоп') {
+            unset($list[$id]);
+            tg_chats_save($TG_CHATS, $list);
+            tg_api($token, 'sendMessage', [
+                'chat_id' => $id,
+                'text'    => "Отключил. Заявки сюда больше не приходят.\nЧтобы вернуть — напиши /start.",
+            ]);
+        } elseif ($id !== '') {
+            $first = !isset($list[$id]);
+            $list[$id] = ['title' => trim($title), 'since' => date('c')];
+            tg_chats_save($TG_CHATS, $list);
+            tg_api($token, 'sendMessage', [
+                'chat_id'    => $id,
+                'parse_mode' => 'HTML',
+                'text'       => $first
+                    ? "✅ <b>Готово, всё подключено.</b>\n\nТеперь каждая заявка с сайта падает сюда: имя, контакт, что человеку нужно и когда он оставил заявку. Под заявкой будет кнопка, чтобы написать ему в один тап.\n\nСайт: cashmachine-store.ru\nОтключить уведомления — команда /stop."
+                    : "Всё уже подключено — заявки приходят сюда. Отключить: /stop.",
+            ]);
+        }
+    }
+    out(['ok' => true]);
 }
 
 if ($action === 'save') {
@@ -397,7 +492,55 @@ if ($action === 'lead') {
         curl_close($ch);
     }
 
-    out(['ok' => true, 'sheet' => $sheetOk]);
+    /* Телеграм. Заявка должна читаться с одного взгляда: кто, как связаться,
+       что нужно и когда пришло. Время — московское: клиент и его люди в РФ,
+       а сервер живёт по своему часовому поясу. */
+    $tgOk = null;
+    $token = (string)($cfg['tg_token'] ?? '');
+    $chats = $token !== '' ? tg_chats($TG_CHATS) : [];
+    if ($chats) {
+        try {
+            $when = (new DateTime('now', new DateTimeZone('Europe/Moscow')))->format('d.m.Y, H:i');
+        } catch (Exception $e) {
+            $when = date('d.m.Y, H:i');
+        }
+
+        $lines = [];
+        $lines[] = '🟢 <b>Новая заявка с сайта</b>';
+        $lines[] = '';
+        $lines[] = '<b>Имя:</b> ' . tg_esc($name);
+        $lines[] = '<b>Контакт:</b> ' . tg_esc($contact);
+        if ($source  !== '') $lines[] = '<b>Что нужно:</b> ' . tg_esc($source);
+        if ($comment !== '') $lines[] = '<b>Комментарий:</b> ' . tg_esc($comment);
+        $lines[] = '';
+        $lines[] = '<i>' . $when . ' МСК · cashmachine-store.ru</i>';
+
+        /* Кнопка «Написать» — только когда контакт похож на ник или телефон:
+           на мусорной строке она вела бы в никуда. */
+        $kb = null;
+        $c  = ltrim($contact, ' ');
+        if (preg_match('~^@?([A-Za-z][A-Za-z0-9_]{4,31})$~', $c, $m)) {
+            $kb = ['inline_keyboard' => [[['text' => '✍️ Написать в Telegram', 'url' => 'https://t.me/' . $m[1]]]]];
+        } elseif (preg_match('~^\+?\d[\d\s\-()]{8,}$~', $c)) {
+            $kb = ['inline_keyboard' => [[['text' => '📞 Позвонить', 'url' => 'tel:' . preg_replace('~[^\d+]~', '', $c)]]]];
+        }
+
+        $sent = 0;
+        foreach (array_keys($chats) as $cid) {
+            $payload = [
+                'chat_id'    => $cid,
+                'parse_mode' => 'HTML',
+                'text'       => implode("\n", $lines),
+                'disable_web_page_preview' => true,
+            ];
+            if ($kb) $payload['reply_markup'] = $kb;
+            $r = tg_api($token, 'sendMessage', $payload);
+            if ($r['code'] === 200) $sent++;
+        }
+        $tgOk = $sent > 0;
+    }
+
+    out(['ok' => true, 'sheet' => $sheetOk, 'tg' => $tgOk]);
 }
 
 out(['ok' => false, 'error' => 'Неизвестное действие'], 400);
