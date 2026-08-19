@@ -8,32 +8,81 @@
 
   var FILE = window.SITE_DATA || { site: {}, categories: [], offers: [], faq: [] };
 
-  /* Что лежит в папке logos. Список руками: браузер не умеет читать папку
-     на обычном хостинге. Положил новый файл на сервер — допиши строку сюда.
-     Если файла на сервере нет, а логотип нужен, в форме есть «Загрузить свой»:
-     такая картинка уезжает прямо в data.js и сервер для неё не нужен. */
-  var LOGOS = [
-    ["alfa.svg", "Альфа-Банк"],
-    ["bistrodengi.png", "Быстроденьги"],
-    ["ekapusta.png", "еКапуста"],
-    ["gpb.png", "Газпромбанк"],
-    ["moneyman.png", "MoneyMan"],
-    ["ozon.svg", "Озон Банк"],
-    ["sber.svg", "Сбер"],
-    ["sovcom.svg", "Совкомбанк"],
+  /* Что лежит в папке logos — двумя группами: банки и МФО. Список руками:
+     браузер не умеет читать папку на обычном хостинге. Положил новый файл
+     на сервер — допиши строку в нужную группу.
+     Если файла на сервере нет, а логотип нужен, в форме есть «Загрузить свою
+     картинку»: она попадает в библиотеку «Мои картинки» внутри data.js,
+     сервер для неё не нужен, и выбрать её можно любому офферу.
+     Ещё вариант — пункт «По ссылке из интернета…»: в поле logo кладётся
+     прямой http(s)-адрес картинки, витрина показывает его как есть. */
+  var URL_VALUE = "__url__";
+  var LOGO_BANKS = [
+    ["sber.svg", "Сбербанк"],
     ["tbank.svg", "Т-Банк"],
+    ["alfa.svg", "Альфа-Банк"],
     ["vtb.svg", "ВТБ"],
-    ["webzaim.png", "Веб-Займ"],
-    ["yandex.svg", "Яндекс Банк"],
-    ["zaymer.png", "Займер"]
+    ["gpb.png", "Газпромбанк"],
+    ["sovcom.svg", "Совкомбанк"],
+    ["halva.png", "Халва"],
+    ["raiffeisen.png", "Райффайзен Банк"],
+    ["psbank.png", "ПСБ"],
+    ["uralsib.png", "Уралсиб"],
+    ["otpbank.png", "ОТП Банк"],
+    ["pochtabank.png", "Почта Банк"],
+    ["mtsbank.png", "МТС Банк"],
+    ["ubrr.png", "УБРиР"],
+    ["akbars.png", "Ак Барс Банк"],
+    ["lockobank.png", "Локо-Банк"],
+    ["ozon.svg", "Ozon Банк"],
+    ["rencredit.png", "Ренессанс Банк"],
+    ["tochka.png", "Точка"],
+    ["modulbank.png", "Модульбанк"],
+    ["bspb.png", "Банк Санкт-Петербург"],
+    ["nskbl.png", "Банк Левобережный"],
+    ["rshb.png", "Россельхозбанк"],
+    ["zenit.png", "Банк Зенит"],
+    ["yandex.svg", "Яндекс Банк"]
+  ];
+  var LOGO_MFO = [
+    ["zaymer.png", "Займер"],
+    ["moneyman.png", "MoneyMan"],
+    ["ekapusta.png", "еКапуста"],
+    ["limezaim.png", "Лайм-Займ"],
+    ["webzaim.png", "Веб-займ"],
+    ["bistrodengi.png", "Быстроденьги"],
+    ["dozarplati.png", "До Зарплаты"],
+    ["migcredit.png", "МигКредит"],
+    ["turbozaim.png", "Турбозайм"],
+    ["carmoney.png", "CarMoney"],
+    ["webbankir.png", "Веббанкир"],
+    ["platiza.png", "Платиза"]
   ];
 
-  var LOGO_MAX = 150 * 1024;   /* больше — раздувает data.js и черновик */
+  function isHttpUrl(v) { return /^https?:\/\/\S+$/i.test(String(v || "")); }
 
-  /* Своя картинка приезжает как data:-строка, файл из папки — по имени. */
+  var LOGO_MAX = 4 * 1024 * 1024;   /* растр всё равно ужмётся до 512 px,
+                                       а SVG крупнее раздул бы data.js */
+
+  /* Библиотека загруженных картинок живёт в DATA.library и уезжает в data.js
+     вместе с каталогом: любую можно выбрать любому офферу и скачать обратно —
+     хранить исходник у себя не обязательно. */
+  function lib() { return DATA.library || (DATA.library = []); }
+  function libFind(name) {
+    var l = DATA.library || [];
+    for (var i = 0; i < l.length; i++) if (l[i] && l[i].name === name) return l[i];
+    return null;
+  }
+
+  /* Своя картинка — ссылка lib: на библиотеку (раньше — data:-строка прямо
+     в оффере, такие тоже понимаем), файл из папки — по имени. */
   function logoSrc(v) {
     v = String(v || "").trim();
     if (!v) return "";
+    if (v.indexOf("lib:") === 0) {
+      var it = libFind(v.slice(4));
+      return it ? it.data : "";
+    }
     return /^(data:|https?:|\.?\/)/.test(v) ? v : "logos/" + v;
   }
 
@@ -67,6 +116,8 @@
           if (!Array.isArray(p.categories) || !p.categories.length) p.categories = clone(FILE.categories);
           if (!p.site) p.site = clone(FILE.site || {});
           if (!Array.isArray(p.faq)) p.faq = clone(FILE.faq || []);
+          // Черновик мог родиться до библиотеки картинок — доливаем её из файла.
+          if (!Array.isArray(p.library) && Array.isArray(FILE.library)) p.library = clone(FILE.library);
           return p;
         }
       }
@@ -100,6 +151,34 @@
     e.preventDefault();
     e.returnValue = "";
   });
+
+  /* Расширение для имени скачиваемого файла берём из самой data:-строки,
+     а не пишем руками: png и jpg путать нельзя. */
+  function extFromDataUrl(u) {
+    var m = /^data:image\/(svg\+xml|jpeg|png)/.exec(String(u || ""));
+    if (!m) return "png";
+    return m[1] === "svg+xml" ? "svg" : m[1] === "jpeg" ? "jpg" : "png";
+  }
+
+  /* Старые загрузки лежали data:-строкой прямо в оффере — переносим их в
+     библиотеку, чтобы картинкой можно было пользоваться и в других офферах.
+     Каталог от этого меняется, поэтому черновик честно помечается
+     несохранённым. Зовётся при каждой замене DATA: загрузка, импорт, сброс. */
+  function migrateLogos() {
+    var moved = 0;
+    (DATA.offers || []).forEach(function (o) {
+      if (!o || !o.logo || String(o.logo).indexOf("data:") !== 0) return;
+      var base = String(o.bank || o.title || "").trim().slice(0, 40) || "картинка";
+      var name = base, n = 2;
+      while (libFind(name)) name = base + "-" + (n++);
+      lib().push({ name: name, ext: extFromDataUrl(o.logo), data: o.logo });
+      o.logo = "lib:" + name;
+      moved++;
+    });
+    if (moved) persist();
+  }
+
+  migrateLogos();
 
   /* ---------- Сервер ---------- */
 
@@ -167,6 +246,7 @@
       try { draft = localStorage.getItem(DRAFT_KEY); } catch (e) { /* нет доступа */ }
       if (draft) return;
       DATA = clone(FILE);
+      migrateLogos();
       renderAll();
     }).catch(function () { /* офлайн — работаем с тем, что в data.js */ });
   }
@@ -538,14 +618,15 @@
   /* Логотип в таблице — подсказка глазами: банк написан рядом текстом,
      поэтому картинка молчит, а буква-заглушка спрятана от скринридера. */
   function logoThumb(o) {
-    if (!o.logo) {
+    var src = logoSrc(o.logo);   // пусто и для lib:-ссылки без записи в библиотеке
+    if (!src) {
       var m = el("span", "cell-logo cell-logo--mono", String(o.bank || "?").trim().charAt(0).toUpperCase());
       m.setAttribute("aria-hidden", "true");
       return m;
     }
     var box = el("span", "cell-logo");
     var img = el("img");
-    img.src = logoSrc(o.logo);
+    img.src = src;
     img.alt = "";
     img.loading = "lazy";
     box.appendChild(img);
@@ -844,18 +925,73 @@
 
   /* ---------- Логотип в форме оффера ---------- */
 
-  var logoSel    = $("#o-logo"),
-      logoPrev   = $("#o-logo-prev"),
-      logoFile   = $("#o-logo-file"),
-      logoStatus = $("#o-logo-status");
+  var logoSel     = $("#o-logo"),
+      logoPrev    = $("#o-logo-prev"),
+      logoFile    = $("#o-logo-file"),
+      logoStatus  = $("#o-logo-status"),
+      logoUrlWrap = $("#o-logo-url-wrap"),
+      logoUrlIn   = $("#o-logo-url"),
+      logoUrlErr  = $("#o-logo-url-err");
 
-  function logoStatusSet(msg, tone) {
-    logoStatus.dataset.tone = tone || "";
-    logoStatus.textContent = msg || "";
+  function logoUrlError(msg) {
+    if (msg) {
+      logoUrlIn.setAttribute("aria-invalid", "true");
+      logoUrlErr.textContent = msg;
+      logoUrlErr.hidden = false;
+    } else {
+      logoUrlIn.removeAttribute("aria-invalid");
+      logoUrlErr.textContent = "";
+      logoUrlErr.hidden = true;
+    }
   }
 
-  /* Список файлов плюс, если у оффера свой логотип, отдельный пункт для него:
-     иначе загруженная картинка исчезала бы при повторном открытии формы. */
+  /* Поле адреса живёт сразу под селектом и показывается только для пункта
+     «По ссылке из интернета…». Перед тем как спрятать его, возвращаем фокус
+     на селект — фокус не должен пропадать внутри скрытого блока. */
+  function syncLogoUrl() {
+    var show = logoSel.value === URL_VALUE;
+    if (!show && !logoUrlWrap.hidden && logoUrlWrap.contains(document.activeElement)) logoSel.focus();
+    logoUrlWrap.hidden = !show;   // показ без автофокуса: человек дойдёт Tab'ом
+  }
+
+  /* Что на самом деле кладём в поле logo: для «По ссылке» — годный адрес
+     из поля, иначе пусто; для остальных пунктов — значение селекта. */
+  function logoValue() {
+    if (logoSel.value !== URL_VALUE) return logoSel.value;
+    var v = logoUrlIn.value.trim();
+    return isHttpUrl(v) ? v : "";
+  }
+
+  /* Чистим и заполняем в разных тиках, как pubStatus: иначе живая область
+     молчит, когда та же ошибка приходит второй раз подряд. */
+  var logoStatusTimer = null;
+  function logoStatusSet(msg, tone) {
+    clearTimeout(logoStatusTimer);
+    logoStatus.textContent = "";
+    logoStatus.dataset.tone = tone || "";
+    if (!msg) return;
+    logoStatusTimer = setTimeout(function () { logoStatus.textContent = msg; }, 100);
+  }
+
+  /* Группа пресетов. Сортируем по названию банка, а не по имени файла:
+     в раскрытом списке работает набор с клавиатуры, и «Сбербанк» должен
+     стоять там, где его ищут, а не там, где оказалась латиница. */
+  function presetGroup(label, list, current, state) {
+    var grp = el("optgroup");
+    grp.label = label;
+    list.slice().sort(function (a, b) { return a[1].localeCompare(b[1], "ru"); })
+      .forEach(function (l) {
+        var o = el("option", null, l[1]);
+        o.value = l[0];
+        grp.appendChild(o);
+        if (l[0] === current) state.known = true;
+      });
+    return grp;
+  }
+
+  /* Список файлов двумя группами, библиотека «Мои картинки», пункт
+     «По ссылке из интернета…» и, если логотип оффера не отсюда, отдельный
+     пункт для него: иначе картинка исчезала бы при повторном открытии формы. */
   function fillLogoSelect(current) {
     current = String(current || "").trim();
     logoSel.textContent = "";
@@ -864,38 +1000,87 @@
     none.value = "";
     logoSel.appendChild(none);
 
-    /* Сортируем по названию банка, а не по имени файла: в раскрытом списке
-       работает набор с клавиатуры, и «Сбер» должен стоять между «Озоном» и
-       «Совкомбанком», а не там, где оказалась латиница. */
-    var known = false;
-    LOGOS.slice().sort(function (a, b) { return a[1].localeCompare(b[1], "ru"); })
-      .forEach(function (l) {
-        var o = el("option", null, l[1] + " — " + l[0]);
-        o.value = l[0];
-        logoSel.appendChild(o);
-        if (l[0] === current) known = true;
+    /* Загруженные через админку картинки: библиотека общая, любую можно
+       выбрать любому офферу — не только тому, где её загрузили. */
+    var mine = DATA.library || [];
+    if (mine.length) {
+      var grp = el("optgroup");
+      grp.label = "Мои картинки";
+      mine.forEach(function (it) {
+        var op = el("option", null, it.name);
+        op.value = "lib:" + it.name;
+        grp.appendChild(op);
       });
+      logoSel.appendChild(grp);
+    }
 
-    if (current && !known) {
-      var own = el("option", null, /^data:/.test(current) ? "Свой файл" : "Свой файл: " + current);
+    var state = { known: current.indexOf("lib:") === 0 && !!libFind(current.slice(4)) };
+    logoSel.appendChild(presetGroup("Банки", LOGO_BANKS, current, state));
+    logoSel.appendChild(presetGroup("МФО", LOGO_MFO, current, state));
+
+    var urlOpt = el("option", null, "По ссылке из интернета…");
+    urlOpt.value = URL_VALUE;
+    logoSel.appendChild(urlOpt);
+
+    /* Сохранённый http(s)-адрес — это и есть режим «По ссылке»: пункт-дубль
+       «Свой файл: …» ему не нужен, адрес встаёт в поле под селектом. */
+    var isUrl = isHttpUrl(current);
+
+    /* Логотип, которого нет ни в списках, ни в библиотеке, не теряем молча. */
+    if (current && !state.known && !isUrl) {
+      var own = el("option", null,
+        /^data:/.test(current) ? "Своя картинка (загружена)"
+        : current.indexOf("lib:") === 0 ? current.slice(4) + " (нет в библиотеке)"
+        : "Свой файл: " + current);
       own.value = current;
       own.dataset.custom = "1";
       logoSel.appendChild(own);
     }
 
-    logoSel.value = current;
+    logoUrlIn.value = isUrl ? current : "";
+    logoUrlError(null);
+    logoSel.value = isUrl ? URL_VALUE : current;
+    syncLogoUrl();
     drawLogoPreview();
+  }
+
+  /* Ссылка «скачать текущую картинку» — для загруженных через админку:
+     исходник не обязательно хранить у себя. href, имя файла и подпись
+     меняются только вместе и только здесь — устаревшее имя при новой
+     картинке хуже, чем ничего. */
+  var logoDl = $("#o-logo-dl");
+  function updateLogoDl() {
+    logoDl.textContent = "";
+    var v = logoSel.value;
+    var it = v.indexOf("lib:") === 0 ? libFind(v.slice(4))
+           : v.indexOf("data:") === 0 ? { name: "картинка", ext: extFromDataUrl(v), data: v }
+           : null;
+    if (!it) return;
+    var fname = it.name + "." + (it.ext || "png");
+    var a = el("a", "dl", "Скачать текущую картинку");
+    a.download = fname;
+    a.href = it.data;
+    a.appendChild(el("span", "vh", " (" + fname + ")"));
+    logoDl.appendChild(a);
   }
 
   /* Превью — оформление: то же самое написано в выбранном пункте списка,
      поэтому наружу оно не звучит. */
   function drawLogoPreview() {
+    updateLogoDl();
     logoPrev.textContent = "";
     logoSel.removeAttribute("aria-invalid");
-    var v = logoSel.value;
+    var v = logoValue();
     if (!v) {
       var bank = $("#o-bank").value.trim();
       logoPrev.appendChild(el("span", "logo-pick__mono", (bank || "?").charAt(0).toUpperCase()));
+      return;
+    }
+    var src = logoSrc(v);
+    if (!src) {
+      /* lib:-ссылка без записи в библиотеке: на витрине будет буква банка. */
+      logoPrev.appendChild(el("span", "logo-pick__mono", "?"));
+      logoSel.setAttribute("aria-invalid", "true");
       return;
     }
     var img = el("img");
@@ -906,16 +1091,35 @@
       logoPrev.textContent = "";
       logoPrev.appendChild(el("span", "logo-pick__mono", "?"));
       logoSel.setAttribute("aria-invalid", "true");
-      logoStatusSet("Файла " + logoSrc(v) + " нет на сервере. Залей его в папку logos/ " +
-                    "или выбери другой логотип — иначе в карточке будет буква.", "bad");
+      logoStatusSet(/^(data:|lib:)/.test(v)
+        ? "Картинка не открылась. Загрузи файл заново или выбери другой логотип."
+        : isHttpUrl(v)
+        ? "Картинка по ссылке не открылась. Проверь адрес — нужна прямая ссылка на png, jpg или svg."
+        : "Файла " + src + " нет на сервере. Залей его в папку logos/ " +
+          "или выбери другой логотип — иначе в карточке будет буква.", "bad");
     });
-    img.src = logoSrc(v);
+    img.src = src;
     logoPrev.appendChild(img);
   }
 
   logoSel.addEventListener("change", function () {
+    syncLogoUrl();
     drawLogoPreview();
     logoStatusSet("");
+  });
+
+  /* Адрес картинки: годный URL сразу попадает в превью, ошибка — только
+     когда адрес дописан (по уходу из поля), а не на каждой букве. */
+  logoUrlIn.addEventListener("input", function () {
+    var v = logoUrlIn.value.trim();
+    if (!v || isHttpUrl(v)) logoUrlError(null);
+    drawLogoPreview();
+  });
+  logoUrlIn.addEventListener("change", function () {
+    var v = logoUrlIn.value.trim();
+    if (v && !isHttpUrl(v)) {
+      logoUrlError("Ссылка должна начинаться с http:// или https:// и быть без пробелов.");
+    }
   });
 
   /* Пока логотип не выбран, в превью стоит буква банка — она должна меняться
@@ -924,37 +1128,62 @@
     if (!logoSel.value) drawLogoPreview();
   });
 
+  /* Свою картинку вписываем в 512 px на канвасе: фотографии с телефона
+     весят мегабайты, а в data.js они поедут текстом. SVG не трогаем —
+     это вектор, канвас его только испортит. */
+  function readLogoFile(f, done, fail) {
+    if (f.size > LOGO_MAX) {
+      fail("Файл больше 4 МБ. Сожми картинку и попробуй снова.");
+      return;
+    }
+    if (!/^image\/(png|jpe?g|webp|svg\+xml)$/.test(f.type)) {
+      fail("Такой файл не подойдёт. Нужна картинка: PNG, JPG, WebP или SVG.");
+      return;
+    }
+    var r = new FileReader();
+    r.onerror = function () { fail("Файл не прочитался. Попробуй другой."); };
+    r.onload = function () {
+      if (f.type === "image/svg+xml") { done(String(r.result)); return; }
+      var img = new Image();
+      img.onerror = function () { fail("Файл не открылся как картинка. Попробуй другой."); };
+      img.onload = function () {
+        var k = Math.min(1, 512 / Math.max(img.width, img.height));
+        var w = Math.max(1, Math.round(img.width * k));
+        var h = Math.max(1, Math.round(img.height * k));
+        var c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        done(f.type === "image/jpeg" ? c.toDataURL("image/jpeg", .85) : c.toDataURL("image/png"));
+      };
+      img.src = String(r.result);
+    };
+    r.readAsDataURL(f);
+  }
+
   logoFile.addEventListener("change", function () {
-    var f = this.files && this.files[0];
-    this.value = "";   /* иначе тот же файл второй раз не выбрать */
+    var input = this;
+    var f = input.files && input.files[0];
+    input.value = "";   /* иначе тот же файл второй раз не выбрать */
+    logoStatusSet("");  /* прошлая ошибка не должна пережить новую попытку */
+    input.removeAttribute("aria-invalid");
     if (!f) return;
 
-    if (!/^image\/(png|svg\+xml|jpeg|webp)$/.test(f.type)) {
-      logoStatusSet("Такой файл не подойдёт. Нужен PNG, SVG, JPG или WEBP.", "bad");
-      return;
-    }
-    if (f.size > LOGO_MAX) {
-      logoStatusSet("Файл весит " + Math.round(f.size / 1024) + " КБ — это много. Сожми картинку до 150 КБ: " +
-                    "логотип хранится прямо в каталоге и утяжеляет сайт.", "bad");
-      return;
-    }
-
-    var r = new FileReader();
-    r.onload = function () {
-      var own = logoSel.querySelector("option[data-custom]");
-      if (!own) {
-        own = el("option");
-        own.dataset.custom = "1";
-        logoSel.appendChild(own);
-      }
-      own.textContent = "Свой файл: " + f.name;
-      own.value = String(r.result);
-      logoSel.value = own.value;
-      drawLogoPreview();
-      logoStatusSet("Логотип «" + f.name + "» загружен. Он сохранится вместе с оффером.", "ok");
-    };
-    r.onerror = function () { logoStatusSet("Файл не прочитался. Попробуй другой.", "bad"); };
-    r.readAsDataURL(f);
+    readLogoFile(f, function (dataUrl) {
+      /* Картинка сразу уходит в общую библиотеку — она не часть черновика
+         диалога, «Отмена» её не заберёт. А вот выбор логотипа в самом оффере
+         закрепится только по кнопке «Сохранить». */
+      var base = String(f.name || "").replace(/\.[^.]+$/, "").trim().slice(0, 40) || "картинка";
+      var ext = f.type === "image/svg+xml" ? "svg" : f.type === "image/jpeg" ? "jpg" : "png";
+      var name = base, n = 2;
+      while (libFind(name)) name = base + "-" + (n++);   // имена в списке должны различаться
+      lib().push({ name: name, ext: ext, data: dataUrl });
+      persist();
+      fillLogoSelect("lib:" + name);   // перерисует и превью, и ссылку скачивания
+      logoStatusSet("Картинка добавлена в библиотеку и выбрана — не забудь сохранить оффер.", "ok");
+    }, function (msg) {
+      input.setAttribute("aria-invalid", "true");
+      logoStatusSet(msg, "bad");
+    });
   });
 
   function openOfferDialog(offer) {
@@ -973,6 +1202,7 @@
     $("#o-note").value    = offer ? (offer.note || "") : "";
     fillLogoSelect(offer ? (offer.logo || "") : "");
     logoStatusSet("");
+    logoFile.removeAttribute("aria-invalid");
     fillFacts(offer);
     $("#o-active").checked = offer ? offer.active !== false : true;
     setActiveState();
@@ -1040,6 +1270,16 @@
       errs.push(["o-url", "Ссылка указана не полностью"]);
     }
 
+    /* Логотип «По ссылке»: пустое поле — просто без логотипа, а вот кривой
+       адрес молча выбрасывать нельзя — человек думает, что картинка есть. */
+    if (logoSel.value === URL_VALUE) {
+      var logoUrl = logoUrlIn.value.trim();
+      if (logoUrl && !isHttpUrl(logoUrl)) {
+        logoUrlError("Ссылка должна начинаться с http:// или https:// и быть без пробелов.");
+        errs.push(["o-logo-url", "Ссылка на картинку указана не полностью"]);
+      }
+    }
+
     errs = errs.concat(factErrors());
 
     var box = $("#offer-errs"), list = $("#offer-err-list");
@@ -1065,7 +1305,7 @@
       title:  title,
       cat:    $("#o-cat").value,
       bank:   $("#o-bank").value.trim(),
-      logo:   logoSel.value,
+      logo:   logoValue(),
       payout: $("#o-payout").value.trim(),
       payFor: $("#o-payfor").value.trim(),
       facts:  collectFacts(),
@@ -1237,6 +1477,7 @@
         DATA = p;
         if (!Array.isArray(DATA.categories) || !DATA.categories.length) DATA.categories = clone(FILE.categories);
         if (!DATA.site) DATA.site = {};
+        migrateLogos();
         persist();
         renderAll();
         shout("Каталог загружен из файла: " + DATA.offers.length + " " +
@@ -1359,6 +1600,7 @@
     try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ок */ }
     DATA = clone(FILE);
     setDirty(false);
+    migrateLogos();
     renderAll();
     refreshPreview();
     shout("Черновик сброшен");

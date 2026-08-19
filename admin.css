@@ -240,6 +240,11 @@ label[for="import-file"]:has(+ .vh-file:focus-visible) {
 }
 .logo-pick select { flex: 1 1 260px; min-width: 0; }
 
+/* Поле «Ссылка на картинку» — показывается для пункта «По ссылке из
+   интернета…» и занимает всю ширину ряда под селектом. */
+.logo-url { flex: 1 1 100%; min-width: 0; }
+.logo-url label { margin-top: 2px; }
+
 /* Плитка предпросмотра — та же, что на карточке витрины, чтобы выбор
    не пришлось проверять на самом сайте. */
 .logo-pick__prev {
@@ -263,6 +268,16 @@ label[for="import-file"]:has(+ .vh-file:focus-visible) {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 15px;
   font-weight: 700;
+}
+
+/* «Скачать текущую картинку»: подчёркнутая ссылка рядом с кнопкой загрузки.
+   --green-ink на белой панели диалога — 6.6:1, на --paper — 6.2:1. */
+.dl {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--green-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .cell-bank {

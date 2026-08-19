@@ -302,12 +302,21 @@
           <label for="o-logo">Логотип банка</label>
           <div class="logo-pick">
             <span class="logo-pick__prev" id="o-logo-prev" aria-hidden="true"></span>
-            <select id="o-logo" aria-describedby="o-logo-hint"></select>
+            <select id="o-logo" aria-describedby="o-logo-hint o-logo-status"></select>
+            <div class="logo-url" id="o-logo-url-wrap" hidden>
+              <label for="o-logo-url">Ссылка на картинку</label>
+              <input type="url" id="o-logo-url" placeholder="https://" autocomplete="off" spellcheck="false"
+                     aria-describedby="o-logo-url-hint o-logo-url-err">
+              <p class="hint" id="o-logo-url-hint">Вставьте прямую ссылку на картинку — png, jpg или svg.</p>
+              <p class="err" id="o-logo-url-err" hidden></p>
+            </div>
             <input type="file" id="o-logo-file" class="vh-file"
-                   accept=".png,.svg,.jpg,.jpeg,.webp,image/png,image/svg+xml,image/jpeg,image/webp">
-            <label class="btn btn--line btn--sm" for="o-logo-file">Загрузить свой</label>
+                   accept=".png,.svg,.jpg,.jpeg,.webp,image/png,image/svg+xml,image/jpeg,image/webp"
+                   aria-describedby="o-logo-hint o-logo-status">
+            <label class="btn btn--line btn--sm" for="o-logo-file">Загрузить свою картинку</label>
+            <span id="o-logo-dl"></span>
           </div>
-          <p class="hint" id="o-logo-hint">Картинка в карточке рядом с названием банка. Нужного банка нет в списке — загрузи файл: PNG или SVG, лучше с прозрачным фоном, до 150 КБ. Без логотипа карточка покажет первую букву названия банка.</p>
+          <p class="hint" id="o-logo-hint">Картинка в карточке рядом с названием банка. Нужного банка нет в списке — загрузи свой файл: PNG, JPG, WebP или SVG до 4 МБ. Ужмётся до 512 px и попадёт в библиотеку «Мои картинки» — из неё логотип можно выбрать любому офферу. Без логотипа карточка покажет первую букву названия банка.</p>
           <p class="form-status" id="o-logo-status" role="status" aria-live="polite" aria-atomic="true"></p>
         </div>
 

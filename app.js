@@ -255,6 +255,19 @@
     var file = String(o.logo || "").trim();
     if (!file) return monoMark(o);
 
+    /* Ссылка lib: ведёт в библиотеку загруженных через админку картинок —
+       она лежит в data.js рядом с каталогом. Записи нет — рисуем инициал,
+       как и без файла. */
+    if (file.indexOf("lib:") === 0) {
+      var libs = Array.isArray(DATA.library) ? DATA.library : [];
+      var hit = null;
+      for (var i = 0; i < libs.length; i++) {
+        if (libs[i] && libs[i].name === file.slice(4)) { hit = libs[i]; break; }
+      }
+      if (!hit || !hit.data) return monoMark(o);
+      file = String(hit.data);
+    }
+
     var box = el("span", "card__logo");
     var img = el("img");
     img.alt = "";
