@@ -107,6 +107,10 @@
   border: 1px solid var(--hair);
   border-radius: var(--radius-sm);
   -webkit-overflow-scrolling: touch;
+  /* Без этого широкая таблица внутри прокрутки всё равно считается в ширину
+     страницы: 375 на экране превращались в 399, и модальное окно, которое
+     браузер центрирует по странице, а не по экрану, съезжало вбок. */
+  contain: paint;
 }
 
 .tbl {
@@ -148,6 +152,10 @@
   letter-spacing: normal;
   text-transform: none;
   color: var(--ink);
+  /* Правило .tbl th ставит nowrap ради шапки таблицы, но первая ячейка
+     строки — это название оффера с подписью: без переноса она требовала
+     332px и распирала таблицу на телефоне. */
+  white-space: normal;
 }
 .tbl tr:last-child td,
 .tbl tbody tr:last-child th[scope="row"] { border-bottom: 0; }
@@ -156,6 +164,9 @@
 .cell-title { font-weight: 700; letter-spacing: -0.015em; }
 .cell-sub { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
 .cell-acts { display: flex; gap: 6px; justify-content: flex-end; }
+/* Хвост подписи (банк, выплата, статус) виден только на телефоне —
+   там эти столбцы спрятаны. На широком экране он дублировал бы их. */
+.cell-more { display: none; }
 
 .iconbtn {
   display: inline-flex;
@@ -342,7 +353,11 @@ label[for="import-file"]:has(+ .vh-file:focus-visible) {
   border: 0;
   border-radius: 20px;
   background: transparent;
-  max-width: min(760px, calc(100vw - 28px));
+  /* svh, а не vh и не dvh: на 100vh окно выше экрана и нижние кнопки
+     недостижимы, а dvh скачет вместе с адресной строкой — окно дёргается
+     прямо под пальцем. svh — гарантированно видимая часть экрана. */
+  max-width: min(760px, calc(100vw - 20px));
+  max-height: calc(100svh - 20px);
   width: 100%;
   color: var(--ink);
 }
@@ -352,7 +367,7 @@ label[for="import-file"]:has(+ .vh-file:focus-visible) {
   padding: 24px 22px;
   background: var(--paper-card);
   border-radius: 20px;
-  max-height: min(86vh, 900px);
+  max-height: calc(100svh - 20px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -464,4 +479,35 @@ label[for="import-file"]:has(+ .vh-file:focus-visible) {
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+/* --------------------------------------------------------------------------
+   Телефон: таблицы
+   --------------------------------------------------------------------------
+   Таблица офферов с min-width 560px растягивала не только себя, но и всю
+   страницу — 801px при экране 375. Из-за этого модальные окна, которые
+   браузер центрирует по ширине страницы, уезжали вправо и обрезались.
+   Поэтому на узких экранах таблица ужимается: лишние столбцы прячутся,
+   а их содержимое дописывается под названием оффера (.cell-more). */
+
+@media (max-width: 700px) {
+  .tbl { min-width: 0; }
+
+  /* Банк, выплата и статус — в подпись под названием */
+  .tbl--offers th:nth-child(2), .tbl--offers td:nth-child(2),
+  .tbl--offers th:nth-child(3), .tbl--offers td:nth-child(3),
+  .tbl--offers th:nth-child(4), .tbl--offers td:nth-child(4) { display: none; }
+
+  .cell-more { display: inline; }
+
+  /* Кнопки действий в ряд не влезают — складываем по две, размер кнопок
+     не трогаем: мельче по ним трудно попасть пальцем. Ширину задаём явно,
+     иначе таблица сжимает столбец до одной кнопки и они встают в столбик. */
+  /* 74 на кнопки + по 10 на поля ячейки, иначе числа спорят между собой.
+     Справа поле шире: там кольцо фокуса, а обёртка таблицы обрезает всё,
+     что вылезает за её край. */
+  .tbl--offers td:last-child { width: 98px; padding-right: 14px; }
+  .cell-acts { flex-wrap: wrap; justify-content: flex-end; width: 74px; min-width: 74px; margin-left: auto; }
+
+  .tbl th, .tbl td { padding-left: 10px; padding-right: 10px; }
 }

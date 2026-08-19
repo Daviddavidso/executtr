@@ -470,6 +470,29 @@ if ($action === 'save') {
         out(['ok' => false, 'error' => 'Каталог пустой или повреждён'], 400);
     }
 
+    /* Страховка от потери выплат. Если админка почему-то не смогла забрать
+       полный каталог (сессия истекла, сеть моргнула) и прислала офферы без
+       внутренних полей, берём их из прошлой сохранённой версии по id.
+       Без этого одно сохранение молча стирало бы все суммы. */
+    $prev = is_file($FULL_FILE) ? json_decode((string)file_get_contents($FULL_FILE), true) : null;
+    if (is_array($prev) && !empty($prev['offers']) && !empty($data['offers']) && is_array($data['offers'])) {
+        $byId = [];
+        foreach ($prev['offers'] as $po) {
+            if (is_array($po) && isset($po['id'])) $byId[(string)$po['id']] = $po;
+        }
+        foreach ($data['offers'] as $i => $o) {
+            if (!is_array($o) || !isset($o['id'])) continue;
+            $old = $byId[(string)$o['id']] ?? null;
+            if (!$old) continue;
+            foreach (['payout', 'payFor'] as $k) {
+                $incoming = isset($o[$k]) ? trim((string)$o[$k]) : '';
+                if ($incoming === '' && trim((string)($old[$k] ?? '')) !== '') {
+                    $data['offers'][$i][$k] = $old[$k];
+                }
+            }
+        }
+    }
+
     /* Полный каталог — с выплатами — ложится над корнем сайта: он нужен
        только админке. В data.js, который грузит браузер каждого посетителя,
        внутренние поля не попадают вовсе: на витрине их и так не показывают,

@@ -646,7 +646,28 @@
       var td1 = el("th");
       td1.setAttribute("scope", "row");
       td1.appendChild(el("b", "cell-title", o.title || "Без названия"));
-      td1.appendChild(el("span", "cell-sub", catLabel(o.cat)));
+
+      /* Подпись под названием. На телефоне столбцы «Банк», «Выплата» и
+         «Статус» не помещаются и прячутся — то же самое дописывается сюда,
+         чтобы ничего не пропало. На широком экране этот хвост скрыт: там
+         данные и так стоят своими столбцами. */
+      var sub = el("span", "cell-sub", catLabel(o.cat));
+      var more = el("span", "cell-more");
+      var addMore = function (label, value) {
+        more.appendChild(document.createTextNode(" · "));
+        /* Подпись «Выплата:» видна только голосовым программам: глазами
+           понятно и так, а на слух «500 ₽» без названия поля — загадка. */
+        if (label) more.appendChild(el("span", "vh", label + ": "));
+        more.appendChild(document.createTextNode(value));
+      };
+      if (o.bank) addMore("Банк", o.bank);
+      if (o.payout) addMore("Выплата", o.payout);
+      /* Статус пишем всегда: если писать только «на паузе», активный оффер
+         на телефоне отличается от него отсутствием слова — на слух это
+         неотличимо от «статус не указан». */
+      addMore("Статус", o.active === false ? "на паузе" : "активен");
+      sub.appendChild(more);
+      td1.appendChild(sub);
       tr.appendChild(td1);
 
       var td2 = el("td");
